@@ -114,3 +114,4 @@ func RecoverAndLog(onCrash func(reason string)) {
 		panic(r)
 	}
 }
+
