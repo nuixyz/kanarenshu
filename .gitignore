@@ -2,3 +2,4 @@
 debug.log
 /dist/
 converter_test.go
+data_test.go
