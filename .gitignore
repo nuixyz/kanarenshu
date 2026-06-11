@@ -1,0 +1,4 @@
+*.log
+debug.log
+/dist/
+converter_test.go
