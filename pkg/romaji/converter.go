@@ -12,7 +12,7 @@ func Normalize(input string) string {
 	return strings.ToLower(strings.TrimSpace(input))
 }
 
-func kanaChecker(c Character, answer string) bool {
+func KanaChecker(c Character, answer string) bool {
 	answer = Normalize(answer)
 	if answer == c.Primary {
 		return true
