@@ -4,3 +4,4 @@ debug.log
 converter_test.go
 data_test.go
 logger_test.go
+game_test.go
