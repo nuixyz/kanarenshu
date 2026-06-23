@@ -62,12 +62,9 @@ func NewMenuModel(
 		cursor: 0,
 		items:  items,
 
-		titleStyle: lipgloss.NewStyle().Foreground(lipgloss.Color(accentColor)).Bold(true).MarginBottom(0),
-
-		subtitleStyle: lipgloss.NewStyle().Foreground(lipgloss.Color(mutedColor)).MarginBottom(2),
-
-		selectedStyle: lipgloss.NewStyle().Foreground(lipgloss.Color(bgColor)).Background(lipgloss.Color(accentColor)).Bold(true).Padding(0, 2),
-
+		titleStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color(accentColor)).Bold(true).MarginBottom(0),
+		subtitleStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color(mutedColor)).MarginBottom(2),
+		selectedStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color(bgColor)).Background(lipgloss.Color(accentColor)).Bold(true).Padding(0, 2),
 		normalStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color(fgColor)).Padding(0, 2),
 		sublabelStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color(mutedColor)).Padding(0, 3),
 		footerStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color(mutedColor)).MarginTop(2),
@@ -105,7 +102,7 @@ func (m MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m MenuModel) View() string {
-	title := m.titleStyle.Render("かなれんしゅ") + "\n" + m.titleStyle.Render("kanarenshu")
+	title := m.titleStyle.Render("かな練習") + "\n" + m.titleStyle.Render("kanarenshu")
 	subtitle := m.sublabelStyle.Render("Japanese kana practise for the terminal")
 
 	menu := ""
