@@ -193,3 +193,7 @@ func (s *Session) PoolSize() int {
 func (s *Session) MaxLevel() int {
 	return data.TotalLevels(s.cfg.Mode) - 1
 }
+
+func (s *Session) Cfg() Config {
+	return s.cfg
+}
