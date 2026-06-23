@@ -48,7 +48,7 @@ func NewProgressStore() (*ProgressStore, error) {
 
 func (ps *ProgressStore) Load() error {
 	if _, err := os.Stat(ps.filePath); os.IsNotExist(err) {
-		logger.Info("No previous progress. Starting a new progress.")
+		logger.Info("No previous progress found. Starting a new progress.")
 		return nil
 	}
 

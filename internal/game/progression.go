@@ -22,12 +22,13 @@ func LevelProgress(s *Session) float64 {
 	totalScore := 0.0
 
 	for _, c := range group {
-		att := s.attempts[c.Kana]
-		cor := s.correct[c.Kana]
-
-		if att == 0 {
+		p, exists := s.store.Data[c.Kana]
+		if !exists || p.Attempts == 0 {
 			continue
 		}
+
+		att := p.Attempts
+		cor := p.Correct
 		acc := float64(cor) / float64(att)
 
 		attemptProgress := float64(att) / float64(minAttempts)

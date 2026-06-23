@@ -6,6 +6,7 @@ import (
 
 	"github.com/nuixyz/kanarenshu/internal/data"
 	"github.com/nuixyz/kanarenshu/internal/logger"
+	"github.com/nuixyz/kanarenshu/internal/storage"
 	"github.com/nuixyz/kanarenshu/pkg/romaji"
 )
 
@@ -46,19 +47,16 @@ type Session struct {
 
 	rng *rand.Rand
 
-	// per character attempt for levelling up
-	attempts map[string]int
-	correct  map[string]int
+	store *storage.ProgressStore
 }
 
-func NewSession(cfg Config) *Session {
+func NewSession(cfg Config, store *storage.ProgressStore) *Session {
 	s := &Session{
-		cfg:      cfg,
-		Level:    cfg.StartLevel,
-		Lives:    cfg.Lives,
-		attempts: make(map[string]int),
-		correct:  make(map[string]int),
-		rng:      rand.New(rand.NewSource(time.Now().UnixNano())),
+		cfg:   cfg,
+		Level: cfg.StartLevel,
+		Lives: cfg.Lives,
+		store: store,
+		rng:   rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 
 	s.pool = data.PoolForLevel(cfg.Mode, s.Level)
@@ -74,7 +72,6 @@ func (s *Session) Current() romaji.Character {
 
 func (s *Session) Submit(answer string) AnswerResult {
 	s.Total++
-	s.attempts[s.current.Kana]++
 
 	if romaji.KanaChecker(s.current, answer) {
 		return s.handleCorrect()
@@ -85,9 +82,18 @@ func (s *Session) Submit(answer string) AnswerResult {
 func (s *Session) handleCorrect() AnswerResult {
 	s.Score++
 	s.Streak++
-	s.correct[s.current.Kana]++
 
-	logger.Debug("Correct: %s (%s) Streak= %d Score= %d", s.current.Kana, s.current.Primary, s.Streak, s.Score)
+	p := GetOrCreateProgress(s.store.Data, s.current.Kana)
+	quality := 4
+
+	if s.Streak > 5 {
+		quality = 5
+	}
+
+	EvaluateSM2(p, quality)
+	_ = s.store.Save()
+
+	logger.Debug("Correct: %s (%s) Streak= %d Score= %d | SM-2 Interval= %d days", s.current.Kana, s.current.Primary, s.Streak, s.Score, p.Interval)
 
 	if s.shouldLevelUp() {
 		s.levelUp()
@@ -101,6 +107,10 @@ func (s *Session) handleCorrect() AnswerResult {
 func (s *Session) handleWrong() AnswerResult {
 	s.Streak = 0
 
+	p := GetOrCreateProgress(s.store.Data, s.current.Kana)
+	EvaluateSM2(p, 1) // Quality = 1 for incorrect answer
+	_ = s.store.Save()
+	
 	logger.Debug("Wrong: %s (%s)", s.current.Kana, s.current.Primary)
 
 	if s.cfg.Lives > 0 {
@@ -110,6 +120,7 @@ func (s *Session) handleWrong() AnswerResult {
 			return AnswerGameOver
 		}
 	}
+	s.pickNext()
 	return AnswerWrong
 }
 
@@ -119,8 +130,31 @@ func (s *Session) pickNext() {
 		return
 	}
 
+	now := time.Now()
+	
 	for {
-		next := s.pool[s.rng.Intn(len(s.pool))]
+		var next romaji.Character
+
+		if s.rng.Intn(10) < 7 {
+			var overdue []romaji.Character
+
+			for _, c := range s.pool {
+				if p, exists := s.store.Data[c.Kana]; exists {
+					if now.After(p.NextReview) {
+						overdue = append(overdue, c)
+					}
+				}
+			}
+
+			if len(overdue) > 0 {
+				next = overdue[s.rng.Intn(len(overdue))]
+			}
+		}
+
+		if next.Kana == "" {
+			next = s.pool[s.rng.Intn(len(s.pool))]
+		}
+
 		if next.Kana != s.current.Kana {
 			s.current = next
 			return
@@ -148,15 +182,13 @@ func (s *Session) shouldLevelUp() bool {
 	totalCorrect := 0
 
 	for _, c := range group {
-		att := s.attempts[c.Kana]
-		cor := s.correct[c.Kana]
-
-		if att < minAttempts {
+		p, exists := s.store.Data[c.Kana]
+		if !exists || p.Attempts < minAttempts {
 			return false
 		}
 
-		totalAttempts += att
-		totalCorrect += cor
+		totalAttempts += p.Attempts
+		totalCorrect += p.Correct
 	}
 
 	if totalAttempts == 0 {

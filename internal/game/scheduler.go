@@ -29,6 +29,8 @@ func EvaluateSM2(p *storage.CharacterProgress, quality int) {
 
 	qFactor := float64(5 - quality)
 	p.EaseFactor = p.EaseFactor + (0.1 - qFactor*(0.08+qFactor*0.02))
+
+	// 1.3 to prevent the intervals from collapsing completely
 	if p.EaseFactor < 1.3 {
 		p.EaseFactor = 1.3
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/nuixyz/kanarenshu/internal/data"
 	"github.com/nuixyz/kanarenshu/internal/game"
 	"github.com/nuixyz/kanarenshu/internal/logger"
+	"github.com/nuixyz/kanarenshu/internal/storage"
 	"github.com/nuixyz/kanarenshu/internal/ui/screens"
 )
 
@@ -37,13 +38,15 @@ type Renderer struct {
 	current tea.Model
 	palette Palette
 	lives   int
+	store   *storage.ProgressStore // Retain persistence reference globally
 }
 
-func NewRenderer(palette Palette, lives int) Renderer {
+func NewRenderer(palette Palette, lives int, store *storage.ProgressStore) Renderer {
 	p := palette
 	return Renderer{
 		palette: p,
 		lives:   lives,
+		store:   store, // Assigned at startup via main lifecycle initialization
 		current: screens.NewMenuModel(
 			p.Bg, p.Fg, p.Accent, p.Muted, p.SelBg,
 		),
@@ -67,6 +70,7 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		p := r.palette
 		r.current = screens.NewStudyModel(
 			cfg,
+			r.store,
 			p.Bg, p.Fg, p.Accent, p.Muted, p.Correct, p.Wrong, p.Border,
 		)
 		return r, r.current.Init()
@@ -98,6 +102,7 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		p := r.palette
 		r.current = screens.NewStudyModel(
 			cfg,
+			r.store,
 			p.Bg, p.Fg, p.Accent, p.Muted, p.Correct, p.Wrong, p.Border,
 		)
 		return r, r.current.Init()

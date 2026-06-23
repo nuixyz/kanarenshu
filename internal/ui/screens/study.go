@@ -11,6 +11,7 @@ import (
 
 	"github.com/nuixyz/kanarenshu/internal/game"
 	"github.com/nuixyz/kanarenshu/internal/logger"
+	"github.com/nuixyz/kanarenshu/internal/storage"
 	"github.com/nuixyz/kanarenshu/internal/ui/components"
 )
 
@@ -49,8 +50,9 @@ type StudyModel struct {
 	modeStyle      lipgloss.Style
 }
 
+// Pass the fully loaded pointer from your main application orchestrator
 func NewStudyModel(
-	cfg game.Config, bgColor, fgColor, accentColor, mutedColor, correctColor, wrongColor, borderColor string,
+	cfg game.Config, store *storage.ProgressStore, bgColor, fgColor, accentColor, mutedColor, correctColor, wrongColor, borderColor string,
 ) StudyModel {
 	ti := textinput.New()
 	ti.Placeholder = "romaji..."
@@ -62,13 +64,13 @@ func NewStudyModel(
 	ti.Focus()
 
 	return StudyModel{
-		session:   game.NewSession(cfg),
+		session:   game.NewSession(cfg, store), // Injects persistence down to game loop
 		input:     ti,
 		cardState: components.CardNeutral,
 
-		card:     components.NewCardStyle(borderColor, fgColor, correctColor, wrongColor, mutedColor),
-		stats:    components.NewStatsPanel(wrongColor, mutedColor, accentColor, correctColor, mutedColor),
-		progress: components.NewProgressBar(20, accentColor, mutedColor, mutedColor),
+		card:      components.NewCardStyle(borderColor, fgColor, correctColor, wrongColor, mutedColor),
+		stats:     components.NewStatsPanel(wrongColor, mutedColor, accentColor, correctColor, mutedColor),
+		progress:  components.NewProgressBar(20, accentColor, mutedColor, mutedColor),
 
 		levelUpStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color(bgColor)).Background(lipgloss.Color(accentColor)).Bold(true).Padding(0, 2).MarginBottom(1),
 		newCharStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color(accentColor)),
@@ -198,7 +200,7 @@ func (m StudyModel) View() string {
 		levelUpBanner = banner + newCharLine + "\n"
 	}
 
-	footer := m.footerStyle.Render("enter to submit		esc to menu		ctrl+c to quit")
+	footer := m.footerStyle.Render("enter to submit        esc to menu        ctrl+c to quit")
 
 	body := fmt.Sprintf(
 		"%s\n\n%s\n\n%s\n\n%s\n\n%s%s",
