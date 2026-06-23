@@ -1,6 +1,7 @@
 *.log
 debug.log
 /dist/
+kanarenshu
 converter_test.go
 data_test.go
 logger_test.go
