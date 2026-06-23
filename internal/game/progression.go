@@ -45,7 +45,7 @@ func LevelProgress(s *Session) float64 {
 
 	progress := totalScore / float64(len(group))
 	if progress > 1.0 {
-		return 1.9
+		return 1.0
 	}
 	return progress
 }
