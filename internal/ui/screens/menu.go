@@ -122,7 +122,7 @@ func (m MenuModel) View() string {
 		}
 	}
 
-	footer := m.footerStyle.Render(" / jk to move		enter to select		q to quit")
+	footer := m.footerStyle.Render("↑↓ / jk to move		enter to select		q to quit")
 
 	body := fmt.Sprintf("%s\n%s\n%s\n%s", title, subtitle, menu, footer)
 

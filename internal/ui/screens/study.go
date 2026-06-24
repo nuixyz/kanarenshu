@@ -36,8 +36,7 @@ type StudyModel struct {
 	showLevelUp bool
 	newChars    []string
 	showHint    bool
-
-	hintText string
+	hintText    string
 
 	width  int
 	height int
@@ -55,9 +54,9 @@ func NewStudyModel(
 	cfg game.Config, store *storage.ProgressStore, bgColor, fgColor, accentColor, mutedColor, correctColor, wrongColor, borderColor string,
 ) StudyModel {
 	ti := textinput.New()
-	ti.Placeholder = "romaji..."
+	ti.Placeholder = "Type your answer"
 	ti.CharLimit = 10
-	ti.Width = 18
+	ti.Width = 20
 	ti.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(fgColor))
 	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(mutedColor))
 	ti.Cursor.Style = lipgloss.NewStyle().Foreground(lipgloss.Color(accentColor))
@@ -68,9 +67,9 @@ func NewStudyModel(
 		input:     ti,
 		cardState: components.CardNeutral,
 
-		card:      components.NewCardStyle(borderColor, fgColor, correctColor, wrongColor, mutedColor),
-		stats:     components.NewStatsPanel(wrongColor, mutedColor, accentColor, correctColor, mutedColor),
-		progress:  components.NewProgressBar(20, accentColor, mutedColor, mutedColor),
+		card:     components.NewCardStyle(borderColor, fgColor, correctColor, wrongColor, mutedColor),
+		stats:    components.NewStatsPanel(wrongColor, mutedColor, accentColor, correctColor, mutedColor),
+		progress: components.NewProgressBar(20, accentColor, mutedColor, mutedColor),
 
 		levelUpStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color(bgColor)).Background(lipgloss.Color(accentColor)).Bold(true).Padding(0, 2).MarginBottom(1),
 		newCharStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color(accentColor)),
@@ -120,7 +119,7 @@ func (m StudyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, textinput.Blink)
 
 			result := m.session.Submit(answer)
-			logger.Debug("submit answer=%q result=%d", answer, result)
+			logger.Debug("Submitted answer=%q", answer)
 
 			switch result {
 			case game.AnswerCorrect:
@@ -180,7 +179,7 @@ func (m StudyModel) View() string {
 	}
 	cardView := m.card.Render(s.Current().Kana, m.cardState, hint)
 
-	inputLabel := lipgloss.NewStyle().Foreground(lipgloss.Color("565f89")).Render("Type Reading: ")
+	inputLabel := lipgloss.NewStyle().Foreground(lipgloss.Color("565f89")).Render("Romaji: ")
 
 	inputBox := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#7aa2f7")).Padding(0, 1).Width(22).Render(m.input.View())
 

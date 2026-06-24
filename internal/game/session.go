@@ -102,7 +102,7 @@ func (s *Session) handleCorrect() AnswerResult {
 	EvaluateSM2(p, quality)
 	_ = s.store.Save()
 
-	logger.Debug("Correct: %s (%s) Streak= %d Score= %d | SM-2 Interval= %d days", s.current.Kana, s.current.Primary, s.Streak, s.Score, p.Interval)
+	logger.Debug("Correct: %s (%s) Streak= %d Score= %d", s.current.Kana, s.current.Primary, s.Streak, s.Score)
 
 	if s.shouldLevelUp() {
 		s.levelUp()
