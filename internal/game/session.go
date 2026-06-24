@@ -93,11 +93,16 @@ func (s *Session) handleCorrect() AnswerResult {
 	s.Streak++
 
 	p := GetOrCreateProgress(s.store.Data, s.current.Kana)
-	quality := 4
 
-	if s.Streak > 5 {
-		quality = 5
+	quality := 3 // Correct but still early — build interval cautiously
+	if p.Repetitions >= 2 {
+		quality = 4 // Established character, normal recall
 	}
+	if s.Streak > 5 && p.Repetitions >= 2 {
+		quality = 5 // Confident recall on a familiar character
+	}
+
+	p.IncrementMode(s.cfg.Mode.String(), true)
 
 	EvaluateSM2(p, quality)
 	_ = s.store.Save()
@@ -117,6 +122,9 @@ func (s *Session) handleWrong() AnswerResult {
 	s.Streak = 0
 
 	p := GetOrCreateProgress(s.store.Data, s.current.Kana)
+
+	p.IncrementMode(s.cfg.Mode.String(), false)
+
 	EvaluateSM2(p, 1) // Quality = 1 for incorrect answer
 	_ = s.store.Save()
 
@@ -140,9 +148,11 @@ func (s *Session) pickNext() {
 	}
 
 	now := time.Now()
+	attempts := 0
 
 	for {
 		var next romaji.Character
+		attempts++
 
 		if s.rng.Intn(10) < 7 {
 			var overdue []romaji.Character
@@ -164,7 +174,8 @@ func (s *Session) pickNext() {
 			next = s.pool[s.rng.Intn(len(s.pool))]
 		}
 
-		if next.Kana != s.current.Kana {
+		// Breaks the loop after 10 runs; This here prevents infinite loop
+		if next.Kana != s.current.Kana || attempts > 10 {
 			s.current = next
 			return
 		}
@@ -187,17 +198,18 @@ func (s *Session) shouldLevelUp() bool {
 	const minAttempts = 5
 	const minAccuracy = 0.90
 
+	modeKey := s.cfg.Mode.String()
 	totalAttempts := 0
 	totalCorrect := 0
 
 	for _, c := range group {
 		p, exists := s.store.Data[c.Kana]
-		if !exists || p.Attempts < minAttempts {
+		if !exists || p.ModeAttempts == nil || p.ModeAttempts[modeKey] < minAttempts {
 			return false
 		}
 
-		totalAttempts += p.Attempts
-		totalCorrect += p.Correct
+		totalAttempts += p.ModeAttempts[modeKey]
+		totalCorrect += p.ModeCorrect[modeKey]
 	}
 
 	if totalAttempts == 0 {

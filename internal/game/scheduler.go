@@ -39,14 +39,23 @@ func EvaluateSM2(p *storage.CharacterProgress, quality int) {
 }
 
 func GetOrCreateProgress(data map[string]*storage.CharacterProgress, kana string) *storage.CharacterProgress {
-	if _, exists := data[kana]; !exists {
-		data[kana] = &storage.CharacterProgress{
-			Kana:        kana,
-			Repetitions: 0,
-			Interval:    0,
-			EaseFactor:  2.5, // Standard SM-2 starting constant
-			NextReview:  time.Now(),
+	// safety check here; initializes internal maps if they don't exists
+	if p, exists := data[kana]; exists {
+		if p.ModeAttempts == nil {
+			p.ModeAttempts = make(map[string]int)
 		}
+		if p.ModeCorrect == nil {
+			p.ModeCorrect = make(map[string]int)
+		}
+		return p
 	}
-	return data[kana]
+	p := &storage.CharacterProgress{
+		Kana:         kana,
+		EaseFactor:   2.5,
+		NextReview:   time.Now(),
+		ModeAttempts: make(map[string]int),
+		ModeCorrect:  make(map[string]int),
+	}
+	data[kana] = p
+	return p
 }

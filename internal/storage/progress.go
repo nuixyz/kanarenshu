@@ -18,9 +18,26 @@ type CharacterProgress struct {
 	NextReview  time.Time `json:"next_review"`
 	Attempts    int       `json:"attempts"`
 	Correct     int       `json:"correct"`
+
+	// Mode-Scoped counters for level up qualifications
+	ModeAttempts map[string]int `json:"mode_attempts"`
+	ModeCorrect  map[string]int `json:"mode_correct"`
 }
 
-// ProgressStore handles persisting state to progress.json
+// IncrementMode increments the mode-scoped attempt counter and optionally the correct counter.
+func (p *CharacterProgress) IncrementMode(modeKey string, correct bool) {
+	if p.ModeAttempts == nil {
+		p.ModeAttempts = make(map[string]int)
+	}
+	if p.ModeCorrect == nil {
+		p.ModeCorrect = make(map[string]int)
+	}
+	p.ModeAttempts[modeKey]++
+	if correct {
+		p.ModeCorrect[modeKey]++
+	}
+}
+
 type ProgressStore struct {
 	filePath              string
 	HighestUnlockedLevels map[string]int                `json:"highest_unlocked_level"`
@@ -64,7 +81,7 @@ func (ps *ProgressStore) Load() error {
 		return fmt.Errorf("failed to parse progress JSON: %w", err)
 	}
 
-	logger.Info("Progress loaded. Highest Level: %v, Tracked characters: %d", ps.HighestUnlockedLevels, len(ps.Data)) //
+	logger.Info("Progress loaded. Highest Level: %v, Tracked characters: %d", ps.HighestUnlockedLevels, len(ps.Data))
 	return nil
 }
 
