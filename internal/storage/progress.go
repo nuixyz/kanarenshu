@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -11,18 +11,20 @@ import (
 )
 
 type CharacterProgress struct {
-	Kana string `json:"kana"`
-	Repetitions int `json:"repetitions"`
-	Interval int `json:"interval"`
-	EaseFactor float64 `json:"ease_factor"`
-	NextReview time.Time `json:"next_review"`
-	Attempts int `json:"attempts"`
-	Correct int `json:"correct"`
+	Kana        string    `json:"kana"`
+	Repetitions int       `json:"repetitions"`
+	Interval    int       `json:"interval"`
+	EaseFactor  float64   `json:"ease_factor"`
+	NextReview  time.Time `json:"next_review"`
+	Attempts    int       `json:"attempts"`
+	Correct     int       `json:"correct"`
 }
 
+// ProgressStore handles persisting state to progress.json
 type ProgressStore struct {
-	filePath string
-	Data map[string]*CharacterProgress `json:"data"`
+	filePath              string
+	HighestUnlockedLevels map[string]int                `json:"highest_unlocked_level"`
+	Data                  map[string]*CharacterProgress `json:"data"`
 }
 
 func NewProgressStore() (*ProgressStore, error) {
@@ -30,50 +32,50 @@ func NewProgressStore() (*ProgressStore, error) {
 	if dataHome == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
-			return nil, fmt.Errorf("Could not find home directory: %w", err)
+			return nil, fmt.Errorf("could not determine home dir: %w", err)
 		}
 		dataHome = filepath.Join(home, ".local", "share")
 	}
 
 	dir := filepath.Join(dataHome, "kanarenshu")
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return nil, fmt.Errorf("Could not create storage dir: %w", err)
+		return nil, fmt.Errorf("could not create storage dir: %w", err)
 	}
 
 	return &ProgressStore{
-		filePath: filepath.Join(dir, "progress.json"),
-		Data: make(map[string]*CharacterProgress),
+		filePath:              filepath.Join(dir, "progress.json"),
+		HighestUnlockedLevels: make(map[string]int),
+		Data:                  make(map[string]*CharacterProgress),
 	}, nil
 }
 
 func (ps *ProgressStore) Load() error {
 	if _, err := os.Stat(ps.filePath); os.IsNotExist(err) {
-		logger.Info("No previous progress found. Starting a new progress.")
+		logger.Info("Progress file not found. Starting fresh.")
 		return nil
 	}
 
 	bytes, err := os.ReadFile(ps.filePath)
 	if err != nil {
-		return fmt.Errorf("Failed to read progress: %w", err)
+		return fmt.Errorf("failed to read progress: %w", err)
 	}
 
-	if err := json.Unmarshal(bytes, &ps.Data); err != nil {
-		return fmt.Errorf("Failed to parse progress JSON: %w", err)
+	if err := json.Unmarshal(bytes, ps); err != nil {
+		return fmt.Errorf("failed to parse progress JSON: %w", err)
 	}
 
-	logger.Info("Progress loaded successfully. Tracked characters: %d", len(ps.Data))
+	logger.Info("Progress loaded. Highest Level: %v, Tracked characters: %d", ps.HighestUnlockedLevels, len(ps.Data)) //
 	return nil
 }
 
-
 func (ps *ProgressStore) Save() error {
-	bytes, err := json.MarshalIndent(ps.Data, "", " ")
+	bytes, err := json.MarshalIndent(ps, "", "  ")
 	if err != nil {
-		return fmt.Errorf("Failed to marshall progress: %w", err)
+		return fmt.Errorf("failed to marshal progress: %w", err)
 	}
 
 	if err := os.WriteFile(ps.filePath, bytes, 0644); err != nil {
-		return fmt.Errorf("Failed to write program file: %w", err)
+		return fmt.Errorf("failed to write progress file: %w", err)
 	}
 
 	logger.Debug("Progress autosaved to disk.")

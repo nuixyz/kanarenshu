@@ -51,9 +51,18 @@ type Session struct {
 }
 
 func NewSession(cfg Config, store *storage.ProgressStore) *Session {
+	startLevel := cfg.StartLevel
+	modeKey := cfg.Mode.String()
+
+	if startLevel == 0 && store.HighestUnlockedLevels != nil {
+		if unlockedLevel, exists := store.HighestUnlockedLevels[modeKey]; exists && unlockedLevel > 0 {
+			startLevel = unlockedLevel
+		}
+	}
+
 	s := &Session{
 		cfg:   cfg,
-		Level: cfg.StartLevel,
+		Level: startLevel,
 		Lives: cfg.Lives,
 		store: store,
 		rng:   rand.New(rand.NewSource(time.Now().UnixNano())),
@@ -110,7 +119,7 @@ func (s *Session) handleWrong() AnswerResult {
 	p := GetOrCreateProgress(s.store.Data, s.current.Kana)
 	EvaluateSM2(p, 1) // Quality = 1 for incorrect answer
 	_ = s.store.Save()
-	
+
 	logger.Debug("Wrong: %s (%s)", s.current.Kana, s.current.Primary)
 
 	if s.cfg.Lives > 0 {
@@ -131,7 +140,7 @@ func (s *Session) pickNext() {
 	}
 
 	now := time.Now()
-	
+
 	for {
 		var next romaji.Character
 
@@ -202,6 +211,17 @@ func (s *Session) shouldLevelUp() bool {
 func (s *Session) levelUp() {
 	s.Level++
 	s.pool = data.PoolForLevel(s.cfg.Mode, s.Level)
+	modeKey := s.cfg.Mode.String()
+
+	if s.store.HighestUnlockedLevels == nil {
+		s.store.HighestUnlockedLevels = make(map[string]int)
+	}
+
+	// Update milestone tracking only for the active mode category
+	if s.Level > s.store.HighestUnlockedLevels[modeKey] {
+		s.store.HighestUnlockedLevels[modeKey] = s.Level
+		_ = s.store.Save()
+	}
 
 	logger.Info("Level Up! New Level= %d Pool= %d Chars", s.Level, len(s.pool))
 	s.pickNext()
