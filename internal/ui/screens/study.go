@@ -11,7 +11,6 @@ import (
 
 	"github.com/nuixyz/kanarenshu/internal/game"
 	"github.com/nuixyz/kanarenshu/internal/logger"
-	"github.com/nuixyz/kanarenshu/internal/storage"
 	"github.com/nuixyz/kanarenshu/internal/ui/components"
 )
 
@@ -36,7 +35,8 @@ type StudyModel struct {
 	showLevelUp bool
 	newChars    []string
 	showHint    bool
-	hintText    string
+
+	hintText string
 
 	width  int
 	height int
@@ -49,21 +49,20 @@ type StudyModel struct {
 	modeStyle      lipgloss.Style
 }
 
-// Pass the fully loaded pointer from your main application orchestrator
 func NewStudyModel(
-	cfg game.Config, store *storage.ProgressStore, bgColor, fgColor, accentColor, mutedColor, correctColor, wrongColor, borderColor string,
+	cfg game.Config, bgColor, fgColor, accentColor, mutedColor, correctColor, wrongColor, borderColor string,
 ) StudyModel {
 	ti := textinput.New()
-	ti.Placeholder = "Type your answer"
+	ti.Placeholder = "romaji..."
 	ti.CharLimit = 10
-	ti.Width = 20
+	ti.Width = 18
 	ti.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(fgColor))
 	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(mutedColor))
 	ti.Cursor.Style = lipgloss.NewStyle().Foreground(lipgloss.Color(accentColor))
 	ti.Focus()
 
 	return StudyModel{
-		session:   game.NewSession(cfg, store), // Injects persistence down to game loop
+		session:   game.NewSession(cfg),
 		input:     ti,
 		cardState: components.CardNeutral,
 
@@ -119,7 +118,7 @@ func (m StudyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, textinput.Blink)
 
 			result := m.session.Submit(answer)
-			logger.Debug("Submitted answer=%q", answer)
+			logger.Debug("submit answer=%q result=%d", answer, result)
 
 			switch result {
 			case game.AnswerCorrect:
@@ -179,7 +178,7 @@ func (m StudyModel) View() string {
 	}
 	cardView := m.card.Render(s.Current().Kana, m.cardState, hint)
 
-	inputLabel := lipgloss.NewStyle().Foreground(lipgloss.Color("565f89")).Render("Romaji: ")
+	inputLabel := lipgloss.NewStyle().Foreground(lipgloss.Color("565f89")).Render("Type Reading: ")
 
 	inputBox := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#7aa2f7")).Padding(0, 1).Width(22).Render(m.input.View())
 
@@ -199,7 +198,7 @@ func (m StudyModel) View() string {
 		levelUpBanner = banner + newCharLine + "\n"
 	}
 
-	footer := m.footerStyle.Render("enter to submit        esc to menu        ctrl+c to quit")
+	footer := m.footerStyle.Render("enter to submit		esc to menu		ctrl+c to quit")
 
 	body := fmt.Sprintf(
 		"%s\n\n%s\n\n%s\n\n%s\n\n%s%s",

@@ -18,18 +18,16 @@ func LevelProgress(s *Session) float64 {
 
 	const minAttempts = 5
 	const targetAccuracy = 0.90
-	modeKey := s.cfg.Mode.String() // this reads attempts from all the modes individually; to keep level progression logic separate for each mode
 
 	totalScore := 0.0
 
 	for _, c := range group {
-		p, exists := s.store.Data[c.Kana]
-		if !exists || p.ModeAttempts == nil || p.ModeAttempts[modeKey] == 0 {
+		att := s.attempts[c.Kana]
+		cor := s.correct[c.Kana]
+
+		if att == 0 {
 			continue
 		}
-
-		att := p.ModeAttempts[modeKey]
-		cor := p.ModeCorrect[modeKey]
 		acc := float64(cor) / float64(att)
 
 		attemptProgress := float64(att) / float64(minAttempts)

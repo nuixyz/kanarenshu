@@ -11,7 +11,7 @@ type InputField struct {
 	borderStyle lipgloss.Style
 }
 
-func NewInputField(accentColor, fgColor, mutedColor string) InputField {
+func NewInputField(accentColor string, fgColor string, mutedColor string) InputField {
 	ti := textinput.New()
 	ti.Placeholder = "romaji..."
 	ti.CharLimit = 10

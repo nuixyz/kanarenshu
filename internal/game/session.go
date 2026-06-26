@@ -6,7 +6,6 @@ import (
 
 	"github.com/nuixyz/kanarenshu/internal/data"
 	"github.com/nuixyz/kanarenshu/internal/logger"
-	"github.com/nuixyz/kanarenshu/internal/storage"
 	"github.com/nuixyz/kanarenshu/pkg/romaji"
 )
 
@@ -47,25 +46,19 @@ type Session struct {
 
 	rng *rand.Rand
 
-	store *storage.ProgressStore
+	// per character attempt for levelling up
+	attempts map[string]int
+	correct  map[string]int
 }
 
-func NewSession(cfg Config, store *storage.ProgressStore) *Session {
-	startLevel := cfg.StartLevel
-	modeKey := cfg.Mode.String()
-
-	if startLevel == 0 && store.HighestUnlockedLevels != nil {
-		if unlockedLevel, exists := store.HighestUnlockedLevels[modeKey]; exists && unlockedLevel > 0 {
-			startLevel = unlockedLevel
-		}
-	}
-
+func NewSession(cfg Config) *Session {
 	s := &Session{
-		cfg:   cfg,
-		Level: startLevel,
-		Lives: cfg.Lives,
-		store: store,
-		rng:   rand.New(rand.NewSource(time.Now().UnixNano())),
+		cfg:      cfg,
+		Level:    cfg.StartLevel,
+		Lives:    cfg.Lives,
+		attempts: make(map[string]int),
+		correct:  make(map[string]int),
+		rng:      rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 
 	s.pool = data.PoolForLevel(cfg.Mode, s.Level)
@@ -81,6 +74,7 @@ func (s *Session) Current() romaji.Character {
 
 func (s *Session) Submit(answer string) AnswerResult {
 	s.Total++
+	s.attempts[s.current.Kana]++
 
 	if romaji.KanaChecker(s.current, answer) {
 		return s.handleCorrect()
@@ -91,21 +85,7 @@ func (s *Session) Submit(answer string) AnswerResult {
 func (s *Session) handleCorrect() AnswerResult {
 	s.Score++
 	s.Streak++
-
-	p := GetOrCreateProgress(s.store.Data, s.current.Kana)
-
-	quality := 3 // Correct but still early — build interval cautiously
-	if p.Repetitions >= 2 {
-		quality = 4 // Established character, normal recall
-	}
-	if s.Streak > 5 && p.Repetitions >= 2 {
-		quality = 5 // Confident recall on a familiar character
-	}
-
-	p.IncrementMode(s.cfg.Mode.String(), true)
-
-	EvaluateSM2(p, quality)
-	_ = s.store.Save()
+	s.correct[s.current.Kana]++
 
 	logger.Debug("Correct: %s (%s) Streak= %d Score= %d", s.current.Kana, s.current.Primary, s.Streak, s.Score)
 
@@ -121,13 +101,6 @@ func (s *Session) handleCorrect() AnswerResult {
 func (s *Session) handleWrong() AnswerResult {
 	s.Streak = 0
 
-	p := GetOrCreateProgress(s.store.Data, s.current.Kana)
-
-	p.IncrementMode(s.cfg.Mode.String(), false)
-
-	EvaluateSM2(p, 1) // Quality = 1 for incorrect answer
-	_ = s.store.Save()
-
 	logger.Debug("Wrong: %s (%s)", s.current.Kana, s.current.Primary)
 
 	if s.cfg.Lives > 0 {
@@ -137,7 +110,6 @@ func (s *Session) handleWrong() AnswerResult {
 			return AnswerGameOver
 		}
 	}
-	s.pickNext()
 	return AnswerWrong
 }
 
@@ -147,35 +119,9 @@ func (s *Session) pickNext() {
 		return
 	}
 
-	now := time.Now()
-	attempts := 0
-
 	for {
-		var next romaji.Character
-		attempts++
-
-		if s.rng.Intn(10) < 7 {
-			var overdue []romaji.Character
-
-			for _, c := range s.pool {
-				if p, exists := s.store.Data[c.Kana]; exists {
-					if now.After(p.NextReview) {
-						overdue = append(overdue, c)
-					}
-				}
-			}
-
-			if len(overdue) > 0 {
-				next = overdue[s.rng.Intn(len(overdue))]
-			}
-		}
-
-		if next.Kana == "" {
-			next = s.pool[s.rng.Intn(len(s.pool))]
-		}
-
-		// Breaks the loop after 10 runs; This here prevents infinite loop
-		if next.Kana != s.current.Kana || attempts > 10 {
+		next := s.pool[s.rng.Intn(len(s.pool))]
+		if next.Kana != s.current.Kana {
 			s.current = next
 			return
 		}
@@ -198,18 +144,19 @@ func (s *Session) shouldLevelUp() bool {
 	const minAttempts = 5
 	const minAccuracy = 0.90
 
-	modeKey := s.cfg.Mode.String()
 	totalAttempts := 0
 	totalCorrect := 0
 
 	for _, c := range group {
-		p, exists := s.store.Data[c.Kana]
-		if !exists || p.ModeAttempts == nil || p.ModeAttempts[modeKey] < minAttempts {
+		att := s.attempts[c.Kana]
+		cor := s.correct[c.Kana]
+
+		if att < minAttempts {
 			return false
 		}
 
-		totalAttempts += p.ModeAttempts[modeKey]
-		totalCorrect += p.ModeCorrect[modeKey]
+		totalAttempts += att
+		totalCorrect += cor
 	}
 
 	if totalAttempts == 0 {
@@ -223,17 +170,6 @@ func (s *Session) shouldLevelUp() bool {
 func (s *Session) levelUp() {
 	s.Level++
 	s.pool = data.PoolForLevel(s.cfg.Mode, s.Level)
-	modeKey := s.cfg.Mode.String()
-
-	if s.store.HighestUnlockedLevels == nil {
-		s.store.HighestUnlockedLevels = make(map[string]int)
-	}
-
-	// Update milestone tracking only for the active mode category
-	if s.Level > s.store.HighestUnlockedLevels[modeKey] {
-		s.store.HighestUnlockedLevels[modeKey] = s.Level
-		_ = s.store.Save()
-	}
 
 	logger.Info("Level Up! New Level= %d Pool= %d Chars", s.Level, len(s.pool))
 	s.pickNext()

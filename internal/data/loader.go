@@ -51,11 +51,9 @@ func PoolForLevel(mode Mode, level int) []romaji.Character {
 	case ModeKatakana:
 		return KatakanaUpToLevel(level)
 	case ModeMixed:
-		var mixedPool []romaji.Character
-		for i := 0; i <= level; i++ {
-			mixedPool = append(mixedPool, GroupForLevel(ModeMixed, i)...)
-		}
-		return mixedPool
+		h := HiraganaUpToLevel(level)
+		k := KatakanaUpToLevel(level)
+		return append(h, k...)
 	default:
 		return nil
 	}
@@ -75,14 +73,14 @@ func GroupForLevel(mode Mode, level int) []romaji.Character {
 		}
 		return nil
 	case ModeMixed:
-		var mixedGroup []romaji.Character
+		var group []romaji.Character
 		if level < len(HiraganaGroups) {
-			mixedGroup = append(mixedGroup, HiraganaGroups[level]...)
+			group = append(group, HiraganaGroups[level]...)
 		}
 		if level < len(KatakanaGroups) {
-			mixedGroup = append(mixedGroup, KatakanaGroups[level]...)
+			group = append(group, KatakanaGroups[level]...)
 		}
-		return mixedGroup
+		return group
 	default:
 		return nil
 	}

@@ -7,11 +7,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/nuixyz/kanarenshu/internal/logger"
-	"github.com/nuixyz/kanarenshu/internal/storage"
 	"github.com/nuixyz/kanarenshu/internal/ui"
 )
 
 func main() {
+	// handle logging
 	cleanup, err := logger.Init()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: Could not initialize logger: %v\n", err)
@@ -24,25 +24,9 @@ func main() {
 		os.Exit(1)
 	})
 
-	// Initialize the persistent storage layer
-	store, err := storage.NewProgressStore()
-	if err != nil {
-		logger.Error("Could not initialize progress store: %v", err)
-		fmt.Fprintf(os.Stderr, "Error: Could not initialize storage directory: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Load existing user progress data from progress.json
-	if err := store.Load(); err != nil {
-		logger.Error("Could not load progress data: %v", err)
-		fmt.Fprintf(os.Stderr, "Error: Failed to read learning records: %v\n", err)
-		os.Exit(1)
-	}
-
 	palette := ui.DefaultPalette()
 	lives := 3
-
-	root := ui.NewRenderer(palette, lives, store)
+	root := ui.NewRenderer(palette, lives)
 
 	p := tea.NewProgram(
 		root,
