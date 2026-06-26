@@ -53,9 +53,9 @@ func NewStudyModel(
 	cfg game.Config, bgColor, fgColor, accentColor, mutedColor, correctColor, wrongColor, borderColor string,
 ) StudyModel {
 	ti := textinput.New()
-	ti.Placeholder = "romaji..."
+	ti.Placeholder = "Type your answer"
 	ti.CharLimit = 10
-	ti.Width = 18
+	ti.Width = 20
 	ti.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(fgColor))
 	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(mutedColor))
 	ti.Cursor.Style = lipgloss.NewStyle().Foreground(lipgloss.Color(accentColor))
@@ -118,7 +118,7 @@ func (m StudyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, textinput.Blink)
 
 			result := m.session.Submit(answer)
-			logger.Debug("submit answer=%q result=%d", answer, result)
+			logger.Debug("Submitted answer=%q result=%d", answer, result)
 
 			switch result {
 			case game.AnswerCorrect:

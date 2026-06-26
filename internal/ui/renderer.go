@@ -58,7 +58,7 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case screens.StartStudyMsg:
-		logger.Info("transitioning to study screen, mode=%d", msg.Mode)
+		logger.Info("Transitioning to Study Screen, mode=%d", msg.Mode)
 		cfg := game.Config{
 			Mode:       data.Mode(msg.Mode),
 			Lives:      r.lives,
@@ -72,7 +72,7 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, r.current.Init()
 
 	case screens.SessionEndMsg:
-		logger.Info("transitioning to results screen, score=%d", msg.Summary.Score)
+		logger.Info("Transitioning to Results Screen, score=%d", msg.Summary.Score)
 		p := r.palette
 		r.current = screens.NewResultsModel(
 			msg.Summary,
@@ -81,7 +81,7 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, r.current.Init()
 
 	case screens.BackToMenuMsg:
-		logger.Info("transitioning back to menu")
+		logger.Info("Transitioning back to Menu")
 		p := r.palette
 		r.current = screens.NewMenuModel(
 			p.Bg, p.Fg, p.Accent, p.Muted, p.SelBg,
@@ -89,7 +89,7 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, r.current.Init()
 
 	case screens.PlayAgainMsg:
-		logger.Info("play again, mode=%d", msg.Mode)
+		logger.Info("Play Again, mode=%d", msg.Mode)
 		cfg := game.Config{
 			Mode:       data.Mode(msg.Mode),
 			Lives:      r.lives,

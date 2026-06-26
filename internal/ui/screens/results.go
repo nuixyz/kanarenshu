@@ -119,7 +119,7 @@ func (m ResultsModel) View() string {
 	)
 
 	footer := m.footerStyle.Render(
-		"r  play again   m  main menu   q  quit",
+		"r  play again		m  main menu		q  quit",
 	)
 
 	body := fmt.Sprintf("%s\n%s%s\n%s", title, gradeBlock, divider, footer)
