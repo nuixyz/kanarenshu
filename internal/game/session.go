@@ -6,6 +6,7 @@ import (
 
 	"github.com/nuixyz/kanarenshu/internal/data"
 	"github.com/nuixyz/kanarenshu/internal/logger"
+	"github.com/nuixyz/kanarenshu/internal/storage"
 	"github.com/nuixyz/kanarenshu/pkg/romaji"
 )
 
@@ -52,6 +53,12 @@ type Session struct {
 }
 
 func NewSession(cfg Config) *Session {
+	if cfg.StartLevel == 0 {
+		if highest, err := storage.HighestLevelFor(cfg.Mode); err == nil {
+			cfg.StartLevel = highest
+		}
+	}
+
 	s := &Session{
 		cfg:      cfg,
 		Level:    cfg.StartLevel,
@@ -72,6 +79,7 @@ func (s *Session) Current() romaji.Character {
 	return s.current
 }
 
+// Submit will log 0 for correct answer, 1 for wrong answer, 2 for game over and 3 for level up
 func (s *Session) Submit(answer string) AnswerResult {
 	s.Total++
 	s.attempts[s.current.Kana]++
@@ -169,6 +177,11 @@ func (s *Session) shouldLevelUp() bool {
 
 func (s *Session) levelUp() {
 	s.Level++
+
+	if err := storage.RecordLevel(s.cfg.Mode, s.Level); err != nil {
+		logger.Error("Failed to save progress: %v", err)
+	}
+
 	s.pool = data.PoolForLevel(s.cfg.Mode, s.Level)
 
 	logger.Info("Level Up! New Level= %d Pool= %d Chars", s.Level, len(s.pool))

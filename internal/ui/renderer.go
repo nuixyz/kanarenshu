@@ -6,6 +6,7 @@ import (
 	"github.com/nuixyz/kanarenshu/internal/data"
 	"github.com/nuixyz/kanarenshu/internal/game"
 	"github.com/nuixyz/kanarenshu/internal/logger"
+	"github.com/nuixyz/kanarenshu/internal/storage"
 	"github.com/nuixyz/kanarenshu/internal/ui/screens"
 )
 
@@ -59,10 +60,16 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case screens.StartStudyMsg:
 		logger.Info("Transitioning to Study Screen, mode=%d", msg.Mode)
+		mode := data.Mode(msg.Mode)
+		highest, err := storage.HighestLevelFor(mode)
+		if err != nil {
+			logger.Error("Failed to load progress: %v", err)
+			highest = 0
+		}
 		cfg := game.Config{
-			Mode:       data.Mode(msg.Mode),
+			Mode:       mode,
 			Lives:      r.lives,
-			StartLevel: 0,
+			StartLevel: highest,
 		}
 		p := r.palette
 		r.current = screens.NewStudyModel(
@@ -90,10 +97,16 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case screens.PlayAgainMsg:
 		logger.Info("Play Again, mode=%d", msg.Mode)
+		mode := data.Mode(msg.Mode)
+		highest, err := storage.HighestLevelFor(mode)
+		if err != nil {
+			logger.Error("Failed to load progress: %v", err)
+			highest = 0
+		}
 		cfg := game.Config{
-			Mode:       data.Mode(msg.Mode),
+			Mode:       mode,
 			Lives:      r.lives,
-			StartLevel: 0,
+			StartLevel: highest,
 		}
 		p := r.palette
 		r.current = screens.NewStudyModel(

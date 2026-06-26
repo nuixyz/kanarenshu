@@ -1,81 +1,121 @@
 package storage
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
+	"github.com/nuixyz/kanarenshu/internal/data"
 	"github.com/nuixyz/kanarenshu/internal/logger"
 )
 
-type CharacterProgress struct {
-	Kana string `json:"kana"`
-	Repetitions int `json:"repetitions"`
-	Interval int `json:"interval"`
-	EaseFactor float64 `json:"ease_factor"`
-	NextReview time.Time `json:"next_review"`
-	Attempts int `json:"attempts"`
-	Correct int `json:"correct"`
+type Progress struct {
+	HighestLevel map[string]int `json:"highest_level"`
 }
 
-type ProgressStore struct {
-	filePath string
-	Data map[string]*CharacterProgress `json:"data"`
+func newProgress() *Progress {
+	return &Progress{
+		HighestLevel: make(map[string]int),
+	}
 }
 
-func NewProgressStore() (*ProgressStore, error) {
+func progressFilePath() (string, error) {
 	dataHome := os.Getenv("XDG_DATA_HOME")
 	if dataHome == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
-			return nil, fmt.Errorf("Could not find home directory: %w", err)
+			return "", fmt.Errorf("Could not determine home directory: %w", err)
 		}
 		dataHome = filepath.Join(home, ".local", "share")
 	}
-
 	dir := filepath.Join(dataHome, "kanarenshu")
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return nil, fmt.Errorf("Could not create storage dir: %w", err)
+		return "", fmt.Errorf("Could not create data directory %s: %w", dir, err)
 	}
-
-	return &ProgressStore{
-		filePath: filepath.Join(dir, "progress.json"),
-		Data: make(map[string]*CharacterProgress),
-	}, nil
+	return filepath.Join(dir, "progress.json"), nil
 }
 
-func (ps *ProgressStore) Load() error {
-	if _, err := os.Stat(ps.filePath); os.IsNotExist(err) {
-		logger.Info("No previous progress. Starting a new progress.")
-		return nil
-	}
-
-	bytes, err := os.ReadFile(ps.filePath)
+func Load() (*Progress, error) {
+	path, err := progressFilePath()
 	if err != nil {
-		return fmt.Errorf("Failed to read progress: %w", err)
+		return nil, err
 	}
 
-	if err := json.Unmarshal(bytes, &ps.Data); err != nil {
-		return fmt.Errorf("Failed to parse progress JSON: %w", err)
+	f, err := os.Open(path)
+	if os.IsNotExist(err) {
+		logger.Info("No progress file found. Starting fresh.")
+		return newProgress(), nil
 	}
 
-	logger.Info("Progress loaded successfully. Tracked characters: %d", len(ps.Data))
+	if err != nil {
+		return nil, fmt.Errorf("Could not open progress file: %w", err)
+	}
+	defer f.Close()
+
+	p := newProgress()
+	if err := json.NewDecoder(f).Decode(p); err != nil {
+		return nil, fmt.Errorf("Could not decode progress file: %w", err)
+	}
+
+	logger.Info("Progress loaded from path: %s", path)
+	return p, nil
+}
+
+func Save(p *Progress) error {
+	path, err := progressFilePath()
+	if err != nil {
+		return err
+	}
+
+	tmp := path + ".tmp"
+	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("Could not create temporary progress file: %w", err)
+	}
+
+	enc := json.NewEncoder(f)
+	enc.SetIndent("", " ")
+	if err := enc.Encode(p); err != nil {
+		_ = f.Close()
+		_ = os.Remove(tmp)
+		return fmt.Errorf("Could not encode progress: %w", err)
+	}
+
+	if err := f.Close(); err != nil {
+		_ = os.Remove(tmp)
+		return fmt.Errorf("Could not close temp progress file: %s", err)
+	}
+
+	if err := os.Rename(tmp, path); err != nil {
+		_ = os.Remove(tmp)
+		return fmt.Errorf("Could not save progress file: %s", err)
+	}
+
+	logger.Info("Progress saved to %s.", path)
 	return nil
 }
 
-
-func (ps *ProgressStore) Save() error {
-	bytes, err := json.MarshalIndent(ps.Data, "", " ")
+func RecordLevel(mode data.Mode, level int) error {
+	p, err := Load()
 	if err != nil {
-		return fmt.Errorf("Failed to marshall progress: %w", err)
+		return err
 	}
 
-	if err := os.WriteFile(ps.filePath, bytes, 0644); err != nil {
-		return fmt.Errorf("Failed to write program file: %w", err)
+	key := mode.String()
+	if level > p.HighestLevel[key] {
+		p.HighestLevel[key] = level
+		logger.Info("New highest level for %s: %d", key, level)
+		return Save(p)
 	}
 
-	logger.Debug("Progress autosaved to disk.")
 	return nil
+}
+
+func HighestLevelFor(mode data.Mode) (int, error) {
+	p, err := Load()
+	if err != nil {
+		return 0, err
+	}
+	return p.HighestLevel[mode.String()], nil
 }
