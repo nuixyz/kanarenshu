@@ -19,6 +19,11 @@ const (
 	AnswerLevelUp
 )
 
+const (
+	initialWeight = 400
+	masteryWeight = 25
+)
+
 type Config struct {
 	Mode       data.Mode
 	Lives      int
@@ -47,9 +52,10 @@ type Session struct {
 
 	rng *rand.Rand
 
+	weights map[string]int //per-character weights
 	// per character attempt for levelling up
-	attempts map[string]int
-	correct  map[string]int
+	// attempts map[string]int
+	// correct  map[string]int
 }
 
 func NewSession(cfg Config) *Session {
@@ -60,16 +66,16 @@ func NewSession(cfg Config) *Session {
 	}
 
 	s := &Session{
-		cfg:      cfg,
-		Level:    cfg.StartLevel,
-		Lives:    cfg.Lives,
-		attempts: make(map[string]int),
-		correct:  make(map[string]int),
-		rng:      rand.New(rand.NewSource(time.Now().UnixNano())),
+		cfg:     cfg,
+		Level:   cfg.StartLevel,
+		Lives:   cfg.Lives,
+		weights: make(map[string]int),
+		rng:     rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 
 	s.pool = data.PoolForLevel(cfg.Mode, s.Level)
-	logger.Info("Session started: Mode=%s Level=%d Pool=%d Chars Lives=%d", cfg.Mode, s.Level, len(s.pool), cfg.Lives)
+	s.resetWeights()
+	logger.Info("Session started: Mode=%s Level=%d Pool=%d Chars Lives=%d", cfg.Mode, s.Level+1, len(s.pool), cfg.Lives)
 
 	s.pickNext()
 	return s
@@ -82,9 +88,14 @@ func (s *Session) Current() romaji.Character {
 // Submit will log 0 for correct answer, 1 for wrong answer, 2 for game over and 3 for level up
 func (s *Session) Submit(answer string) AnswerResult {
 	s.Total++
-	s.attempts[s.current.Kana]++
 
-	if romaji.KanaChecker(s.current, answer) {
+	isCorrect := romaji.KanaChecker(s.current, answer)
+	
+	if err := storage.RecordAttempt(s.cfg.Mode, s.current.Kana, isCorrect); err != nil {
+		logger.Error("Failed to record character stats: %v", err)
+	}
+
+	if isCorrect {
 		return s.handleCorrect()
 	}
 	return s.handleWrong()
@@ -93,9 +104,12 @@ func (s *Session) Submit(answer string) AnswerResult {
 func (s *Session) handleCorrect() AnswerResult {
 	s.Score++
 	s.Streak++
-	s.correct[s.current.Kana]++
+	// s.correct[s.current.Kana]++
 
-	logger.Debug("Correct: %s (%s) Streak= %d Score= %d", s.current.Kana, s.current.Primary, s.Streak, s.Score)
+	kana := s.current.Kana
+	s.weights[kana] = s.weights[kana] / 2
+
+	logger.Debug("Correct: %s (%s) Weight= %d", s.current.Kana, s.current.Primary, s.weights[kana])
 
 	if s.shouldLevelUp() {
 		s.levelUp()
@@ -109,6 +123,13 @@ func (s *Session) handleCorrect() AnswerResult {
 func (s *Session) handleWrong() AnswerResult {
 	s.Streak = 0
 
+	kana := s.current.Kana
+	w := s.weights[kana] * 2
+	if w > initialWeight {
+		w = initialWeight
+	}
+	s.weights[kana] = w
+
 	logger.Debug("Wrong: %s (%s)", s.current.Kana, s.current.Primary)
 
 	if s.cfg.Lives > 0 {
@@ -121,23 +142,85 @@ func (s *Session) handleWrong() AnswerResult {
 	return AnswerWrong
 }
 
+// includes a weighted random selection instead of pure gacha
 func (s *Session) pickNext() {
 	if len(s.pool) == 1 {
 		s.current = s.pool[0]
 		return
 	}
 
-	for {
-		next := s.pool[s.rng.Intn(len(s.pool))]
-		if next.Kana != s.current.Kana {
-			s.current = next
+	type candidate struct {
+		char   romaji.Character
+		weight int
+	}
+
+	candidates := make([]candidate, 0, len(s.pool)-1)
+	total := 0
+	for _, c := range s.pool {
+		if c.Kana == s.current.Kana {
+			continue
+		}
+		w := s.weights[c.Kana]
+		if w < 1 {
+			w = 1 // floor??????? i am not sure what this does
+		}
+		candidates = append(candidates, candidate{c, w})
+		total += w
+	}
+
+	r := s.rng.Intn(total)
+	cum := 0
+
+	for _, cand := range candidates {
+		cum += cand.weight
+		if r < cum {
+			s.current = cand.char
 			return
 		}
 	}
+
+	s.current = candidates[len(candidates)-1].char
 }
 
 // At least 5 answers attempted per character in the current level group
 // Accuracy accross group >= 90%
+// func (s *Session) shouldLevelUp() bool {
+// 	nextLevel := s.Level + 1
+// 	if nextLevel >= data.TotalLevels(s.cfg.Mode) {
+// 		return false
+// 	}
+
+// 	group := data.GroupForLevel(s.cfg.Mode, s.Level)
+// 	if len(group) == 0 {
+// 		return false
+// 	}
+
+// 	const minAttempts = 5
+// 	const minAccuracy = 0.90
+
+// 	totalAttempts := 0
+// 	totalCorrect := 0
+
+// 	for _, c := range group {
+// 		att := s.attempts[c.Kana]
+// 		cor := s.correct[c.Kana]
+
+// 		if att < minAttempts {
+// 			return false
+// 		}
+
+// 		totalAttempts += att
+// 		totalCorrect += cor
+// 	}
+
+// 	if totalAttempts == 0 {
+// 		return false
+// 	}
+
+// 	accuracy := float64(totalCorrect) / float64(totalAttempts)
+// 	return accuracy >= minAccuracy
+// }
+
 func (s *Session) shouldLevelUp() bool {
 	nextLevel := s.Level + 1
 	if nextLevel >= data.TotalLevels(s.cfg.Mode) {
@@ -149,30 +232,12 @@ func (s *Session) shouldLevelUp() bool {
 		return false
 	}
 
-	const minAttempts = 5
-	const minAccuracy = 0.90
-
-	totalAttempts := 0
-	totalCorrect := 0
-
 	for _, c := range group {
-		att := s.attempts[c.Kana]
-		cor := s.correct[c.Kana]
-
-		if att < minAttempts {
+		if s.weights[c.Kana] > masteryWeight {
 			return false
 		}
-
-		totalAttempts += att
-		totalCorrect += cor
 	}
-
-	if totalAttempts == 0 {
-		return false
-	}
-
-	accuracy := float64(totalCorrect) / float64(totalAttempts)
-	return accuracy >= minAccuracy
+	return true
 }
 
 func (s *Session) levelUp() {
@@ -183,9 +248,16 @@ func (s *Session) levelUp() {
 	}
 
 	s.pool = data.PoolForLevel(s.cfg.Mode, s.Level)
+	s.resetWeights()
 
 	logger.Info("Level Up! New Level= %d Pool= %d Chars", s.Level, len(s.pool))
 	s.pickNext()
+}
+
+func (s *Session) resetWeights() {
+	for _, c := range s.pool {
+		s.weights[c.Kana] = initialWeight
+	}
 }
 
 func (s *Session) Accuracy() float64 {
@@ -209,4 +281,8 @@ func (s *Session) MaxLevel() int {
 
 func (s *Session) Cfg() Config {
 	return s.cfg
+}
+
+func (s *Session) WeightFor(kana string) int {
+	return s.weights[kana]
 }

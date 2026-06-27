@@ -11,12 +11,25 @@ import (
 )
 
 type Progress struct {
-	HighestLevel map[string]int `json:"highest_level"`
+	HighestLevel map[string]int        `json:"highest_level"`
+	Characters   map[string]*CharStats `json:"kana"`
+}
+
+type ModeStats struct {
+	Attempts int `json:"attempts"`
+	Correct  int `json:"correct"`
+}
+
+type CharStats struct {
+	TotalAttempts int                   `json:"total_attempts"`
+	TotalCorrect  int                   `json:"total_correct"`
+	Modes         map[string]*ModeStats `json:"modes"`
 }
 
 func newProgress() *Progress {
 	return &Progress{
 		HighestLevel: make(map[string]int),
+		Characters:   make(map[string]*CharStats),
 	}
 }
 
@@ -56,6 +69,14 @@ func Load() (*Progress, error) {
 	p := newProgress()
 	if err := json.NewDecoder(f).Decode(p); err != nil {
 		return nil, fmt.Errorf("Could not decode progress file: %w", err)
+	}
+
+	if p.HighestLevel == nil {
+		p.HighestLevel = make(map[string]int)
+	}
+
+	if p.Characters == nil {
+		p.Characters = make(map[string]*CharStats)
 	}
 
 	logger.Info("Progress loaded from path: %s", path)
@@ -118,4 +139,38 @@ func HighestLevelFor(mode data.Mode) (int, error) {
 		return 0, err
 	}
 	return p.HighestLevel[mode.String()], nil
+}
+
+func RecordAttempt(mode data.Mode, kana string, correct bool) error {
+	p, err := Load()
+	if err != nil {
+		return err
+	}
+
+	cs, ok := p.Characters[kana]
+	if !ok {
+		cs = &CharStats{
+			Modes: make(map[string]*ModeStats),
+		}
+		p.Characters[kana] = cs
+	}
+	if cs.Modes == nil {
+		cs.Modes = make(map[string]*ModeStats)
+	}
+
+	modeKey := mode.String()
+	ms, ok := cs.Modes[modeKey]
+	if !ok {
+		ms = &ModeStats{}
+		cs.Modes[modeKey] = ms
+	}
+
+	cs.TotalAttempts++
+	ms.Attempts++
+	if correct {
+		cs.TotalCorrect++
+		ms.Correct++
+	}
+
+	return Save(p)
 }

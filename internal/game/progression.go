@@ -15,39 +15,22 @@ func LevelProgress(s *Session) float64 {
 	if len(group) == 0 {
 		return 0
 	}
-
-	const minAttempts = 5
-	const targetAccuracy = 0.90
-
-	totalScore := 0.0
-
+	total := 0.0
 	for _, c := range group {
-		att := s.attempts[c.Kana]
-		cor := s.correct[c.Kana]
+		w := float64(s.WeightFor(c.Kana))
 
-		if att == 0 {
-			continue
+		if w > initialWeight {
+			w = initialWeight
 		}
-		acc := float64(cor) / float64(att)
-
-		attemptProgress := float64(att) / float64(minAttempts)
-		if attemptProgress > 1.0 {
-			attemptProgress = 1.0
+		if w < masteryWeight {
+			w = masteryWeight
 		}
 
-		charScore := (acc / targetAccuracy) * attemptProgress
-		if charScore > 1.0 {
-			charScore = 1.0
-		}
-
-		totalScore += charScore
+		charProgress := 1.0 - (w-masteryWeight)/(initialWeight-masteryWeight)
+		total += charProgress
 	}
 
-	progress := totalScore / float64(len(group))
-	if progress > 1.0 {
-		return 1.0
-	}
-	return progress
+	return total / float64(len(group))
 }
 
 func NewCharsForLevel(mode data.Mode, level int) []string {
