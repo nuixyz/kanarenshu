@@ -2,6 +2,7 @@ package components
 
 import (
 	"github.com/charmbracelet/lipgloss"
+	"github.com/nuixyz/kanarenshu/internal/theme"
 )
 
 type CardStyle struct {
@@ -34,14 +35,14 @@ func NewCardStyle(
 	}
 }
 
-func (cs CardStyle) Render(kana string, state CardState, hint string) string {
+func (cs CardStyle) Render(kana string, state CardState, hint string, palette theme.Palette) string {
 	box := cs.box
 
 	switch state {
 	case CardCorrect:
-		box = box.BorderForeground(lipgloss.Color("#9ece6a"))
+		box = box.BorderForeground(lipgloss.Color(palette.Correct))
 	case CardWrong:
-		box = box.BorderForeground(lipgloss.Color("#f7768e"))
+		box = box.BorderForeground(lipgloss.Color(palette.Wrong))
 	}
 
 	char := cs.character.Render(kana)

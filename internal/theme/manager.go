@@ -68,12 +68,18 @@ var catppuccinRaw []byte
 //go:embed themes/nord.toml
 var nordRaw []byte
 
+//go:embed themes/dracula.toml
+var draculaRaw []byte
+
+//go:embed themes/gruvbox.toml
+var gruvboxRaw []byte
+
 var registry = map[string][]byte{
 	"tokyo-night": tokyoNightRaw,
 	"catppuccin":  catppuccinRaw,
-	// "gruvbox":     gruvboxRaw,
-	"nord": nordRaw,
-	// "dracula":     draculaRaw,
+	"gruvbox":     gruvboxRaw,
+	"nord":        nordRaw,
+	"dracula":     draculaRaw,
 }
 
 func Available() []string {

@@ -1,0 +1,11 @@
+name    = "Dracula"
+author  = "zenorocha"
+
+bg      = "#282a36"
+fg      = "#f8f8f2"
+accent  = "#bd93f9"
+correct = "#50fa7b"
+wrong   = "#ff5555"
+muted   = "#6272a4"
+border  = "#44475a"
+sel_bg  = "#bd93f9"

@@ -11,6 +11,7 @@ import (
 
 	"github.com/nuixyz/kanarenshu/internal/game"
 	"github.com/nuixyz/kanarenshu/internal/logger"
+	"github.com/nuixyz/kanarenshu/internal/theme"
 	"github.com/nuixyz/kanarenshu/internal/ui/components"
 )
 
@@ -31,6 +32,8 @@ type StudyModel struct {
 	card      components.CardStyle
 	stats     components.StatsPanel
 	progress  components.ProgressBar
+
+	palette theme.Palette
 
 	showLevelUp bool
 	newChars    []string
@@ -66,6 +69,16 @@ func NewStudyModel(
 		input:     ti,
 		cardState: components.CardNeutral,
 
+		palette: theme.Palette{
+			Bg:      bgColor,
+			Fg:      fgColor,
+			Accent:  accentColor,
+			Muted:   mutedColor,
+			Correct: correctColor,
+			Wrong:   wrongColor,
+			Border:  borderColor,
+		},
+
 		card:     components.NewCardStyle(borderColor, fgColor, correctColor, wrongColor, mutedColor),
 		stats:    components.NewStatsPanel(wrongColor, mutedColor, accentColor, correctColor, mutedColor),
 		progress: components.NewProgressBar(20, accentColor, mutedColor, mutedColor),
@@ -77,6 +90,7 @@ func NewStudyModel(
 		containerStyle: lipgloss.NewStyle().Padding(1, 4),
 		modeStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color(mutedColor)),
 	}
+
 }
 
 func (m StudyModel) Init() tea.Cmd {
@@ -176,11 +190,12 @@ func (m StudyModel) View() string {
 	if m.showHint {
 		hint = m.hintText
 	}
-	cardView := m.card.Render(s.Current().Kana, m.cardState, hint)
 
-	inputLabel := lipgloss.NewStyle().Foreground(lipgloss.Color("565f89")).Render("Type Reading: ")
+	cardView := m.card.Render(s.Current().Kana, m.cardState, hint, m.palette)
 
-	inputBox := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#7aa2f7")).Padding(0, 1).Width(22).Render(m.input.View())
+	inputLabel := lipgloss.NewStyle().Foreground(lipgloss.Color(m.palette.Muted)).Render("Type Reading: ")
+
+	inputBox := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color(m.palette.Accent)).Padding(0, 1).Width(22).Render(m.input.View())
 
 	inputArea := inputLabel + "\n" + inputBox
 

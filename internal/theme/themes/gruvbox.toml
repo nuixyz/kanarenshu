@@ -1,0 +1,11 @@
+name    = "Gruvbox Dark"
+author  = "morhetz"
+
+bg      = "#282828"
+fg      = "#ebdbb2"
+accent  = "#83a598"
+correct = "#b8bb26"
+wrong   = "#fb4934"
+muted   = "#928374"
+border  = "#504945"
+sel_bg  = "#83a598"
