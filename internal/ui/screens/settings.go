@@ -24,7 +24,6 @@ type settingKind int
 
 const (
 	kindTheme settingKind = iota
-	kindMode
 	kindLives
 	kindHints
 )
@@ -42,7 +41,7 @@ type settingRow struct {
 
 func (r settingRow) displayValue() string {
 	switch r.kind {
-	case kindTheme, kindMode:
+	case kindTheme:
 		return r.options[r.idx]
 	case kindHints:
 		if r.boolVal {
@@ -84,21 +83,12 @@ func NewSettingsModel(
 	themeOptions := sortedThemes()
 	themeIdx := indexOfOrZero(themeOptions, cfg.Theme)
 
-	modeOptions := []string{"hiragana", "katakana", "mixed"}
-	modeIdx := indexOfOrZero(modeOptions, cfg.Mode)
-
 	rows := []settingRow{
 		{
 			label:   "Theme",
 			kind:    kindTheme,
 			idx:     themeIdx,
 			options: themeOptions,
-		},
-		{
-			label:   "Mode",
-			kind:    kindMode,
-			idx:     modeIdx,
-			options: modeOptions,
 		},
 		{
 			label:  "Lives",
@@ -180,7 +170,7 @@ func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *SettingsModel) stepRow(delta int) {
 	row := &m.rows[m.cursor]
 	switch row.kind {
-	case kindTheme, kindMode:
+	case kindTheme:
 		row.idx = clamp(row.idx+delta, 0, len(row.options)-1)
 	case kindHints:
 		row.boolVal = !row.boolVal
@@ -233,7 +223,7 @@ func (m SettingsModel) View() string {
 func (m *SettingsModel) arrowWrap(row settingRow) string {
 	v := row.displayValue()
 	switch row.kind {
-	case kindTheme, kindMode:
+	case kindTheme:
 		canLeft := row.idx > 0
 		canRight := row.idx < len(row.options)-1
 		left := " "
@@ -258,8 +248,6 @@ func (m *SettingsModel) toConfig() storage.Config {
 		switch row.kind {
 		case kindTheme:
 			cfg.Theme = row.options[row.idx]
-		case kindMode:
-			cfg.Mode = row.options[row.idx]
 		case kindLives:
 			cfg.Lives = row.intVal
 		case kindHints:

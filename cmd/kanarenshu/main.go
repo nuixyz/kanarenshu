@@ -31,7 +31,7 @@ func main() {
 		logger.Error("Could not load config: %v — using defaults", err)
 		cfg = storage.DefaultConfig()
 	}
-	logger.Info("Config loaded: theme=%s mode=%s lives=%d", cfg.Theme, cfg.Mode, cfg.Lives)
+	logger.Info("Config loaded: theme=%s mode=%s lives=%d", cfg.Theme, cfg.Lives)
 
 	// Resolve palette from config theme.
 	palette, err := theme.Load(cfg.Theme)

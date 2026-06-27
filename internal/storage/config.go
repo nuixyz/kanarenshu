@@ -10,7 +10,6 @@ import (
 
 type Config struct {
 	Theme        string `toml:"theme"`
-	Mode         string `toml:"mode"`
 	Lives        int    `toml:"lives"`
 	RomajiStrict bool   `toml:"romaji_strict"`
 	ShowHints    bool   `toml:"show_hints"`
@@ -19,7 +18,6 @@ type Config struct {
 func DefaultConfig() Config {
 	return Config{
 		Theme:        "tokyo-night",
-		Mode:         "hiragana",
 		Lives:        3,
 		RomajiStrict: false,
 		ShowHints:    true,
@@ -84,12 +82,11 @@ func writeConfig(path string, cfg Config) error {
 # github.com/nuixyz/kanarenshu
 
 theme         = %q  # tokyo-night | catppuccin | gruvbox | nord | dracula
-mode          = %q  # hiragana | katakana | mixed
 lives         = %d              # 0 = infinite
 romaji_strict = %t          # true = Hepburn only (e.g. "shi", not "si")
 show_hints    = %t           # show reading hint after a wrong answer
 `,
-		cfg.Theme, cfg.Mode, cfg.Lives, cfg.RomajiStrict, cfg.ShowHints,
+		cfg.Theme, cfg.Lives, cfg.RomajiStrict, cfg.ShowHints,
 	)
 
 	if _, err := f.WriteString(content); err != nil {
@@ -115,9 +112,6 @@ func applyDefaults(cfg *Config) {
 	d := DefaultConfig()
 	if cfg.Theme == "" {
 		cfg.Theme = d.Theme
-	}
-	if cfg.Mode == "" {
-		cfg.Mode = d.Mode
 	}
 	if cfg.Lives == 0 {
 		cfg.Lives = d.Lives
