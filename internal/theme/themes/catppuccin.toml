@@ -1,0 +1,11 @@
+name    = "Catppuccin Mocha"
+author  = "catppuccin"
+
+bg      = "#1e1e2e"
+fg      = "#cdd6f4"
+accent  = "#89b4fa"
+correct = "#a6e3a1"
+wrong   = "#f38ba8"
+muted   = "#6c7086"
+border  = "#45475a"
+sel_bg  = "#89b4fa"

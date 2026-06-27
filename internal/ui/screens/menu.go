@@ -11,6 +11,8 @@ type StartStudyMsg struct {
 	Mode int // 0, 1, 2
 }
 
+type OpenSettingsMsg struct{}
+
 type QuitMsg struct{}
 
 type menuItem struct {
@@ -50,6 +52,11 @@ func NewMenuModel(
 			label:    "Mixed",
 			sublabel: "Both scripts interleaved",
 			msg:      StartStudyMsg{Mode: 2},
+		},
+		{
+			label:    "Settings",
+			sublabel: "Theme, lives, hints",
+			msg:      OpenSettingsMsg{},
 		},
 		{
 			label:    "Quit",
@@ -94,6 +101,8 @@ func (m MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 			return m, func() tea.Msg { return selected.msg }
+		case "s":
+			return m, func() tea.Msg { return OpenSettingsMsg{} }
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
@@ -122,7 +131,7 @@ func (m MenuModel) View() string {
 		}
 	}
 
-	footer := m.footerStyle.Render(" ↑↓ / jk to move		enter to select		q to quit")
+	footer := m.footerStyle.Render(" ↑↓ / jk to move		enter to select		s settings		ctrl+t cycle theme		q to quit")
 
 	body := fmt.Sprintf("%s\n%s\n%s\n%s", title, subtitle, menu, footer)
 

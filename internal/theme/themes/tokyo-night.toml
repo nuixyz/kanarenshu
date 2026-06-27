@@ -1,0 +1,11 @@
+name    = "Tokyo Night"
+author  = "enkia"
+
+bg      = "#1a1b26"
+fg      = "#c0caf5"
+accent  = "#7aa2f7"
+correct = "#9ece6a"
+wrong   = "#f7768e"
+muted   = "#565f89"
+border  = "#3b4261"
+sel_bg  = "#7aa2f7"

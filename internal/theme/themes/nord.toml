@@ -1,0 +1,11 @@
+name    = "Nord"
+author  = "arcticicestudio"
+
+bg      = "#2e3440"
+fg      = "#eceff4"
+accent  = "#88c0d0"
+correct = "#a3be8c"
+wrong   = "#bf616a"
+muted   = "#4c566a"
+border  = "#3b4252"
+sel_bg  = "#5e81ac"

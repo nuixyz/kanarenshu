@@ -7,48 +7,34 @@ import (
 	"github.com/nuixyz/kanarenshu/internal/game"
 	"github.com/nuixyz/kanarenshu/internal/logger"
 	"github.com/nuixyz/kanarenshu/internal/storage"
+	"github.com/nuixyz/kanarenshu/internal/theme"
 	"github.com/nuixyz/kanarenshu/internal/ui/screens"
 )
 
-type Palette struct {
-	Bg      string
-	Fg      string
-	Accent  string
-	Correct string
-	Wrong   string
-	Muted   string
-	Border  string
-	SelBg   string
-}
-
-func DefaultPalette() Palette {
-	return Palette{
-		Bg:      "#1a1b26",
-		Fg:      "#c0caf5",
-		Accent:  "#7aa2f7",
-		Correct: "#9ece6a",
-		Wrong:   "#f7768e",
-		Muted:   "#565f89",
-		Border:  "#3b4261",
-		SelBg:   "#7aa2f7",
-	}
-}
-
 type Renderer struct {
 	current tea.Model
-	palette Palette
+	palette theme.Palette
 	lives   int
+	cfg     storage.Config
+
+	themeList []string
+	themeIdx  int
 }
 
-func NewRenderer(palette Palette, lives int) Renderer {
+func NewRenderer(palette theme.Palette, cfg storage.Config) Renderer {
+	themeList := sortedThemeList()
+	themeIdx := indexOfTheme(themeList, cfg.Theme)
+
 	p := palette
-	return Renderer{
-		palette: p,
-		lives:   lives,
-		current: screens.NewMenuModel(
-			p.Bg, p.Fg, p.Accent, p.Muted, p.SelBg,
-		),
+	r := Renderer{
+		palette:   p,
+		lives:     cfg.Lives,
+		cfg:       cfg,
+		themeList: themeList,
+		themeIdx:  themeIdx,
 	}
+	r.current = r.newMenu()
+	return r
 }
 
 func (r Renderer) Init() tea.Cmd {
@@ -56,6 +42,19 @@ func (r Renderer) Init() tea.Cmd {
 }
 
 func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	//global shortcut
+	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "ctrl+t" {
+		r.themeIdx = (r.themeIdx + 1) % len(r.themeList)
+		name := r.themeList[r.themeIdx]
+		r.applyThemeByName(name)
+		r.cfg.Theme = name
+		// Rebuild the current screen with the new palette colours.
+		r.current = r.rebuildCurrent()
+		logger.Info("Theme cycled to %s", name)
+		return r, r.current.Init()
+	}
+
+	// screen scoped
 	switch msg := msg.(type) {
 
 	case screens.StartStudyMsg:
@@ -71,28 +70,17 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Lives:      r.lives,
 			StartLevel: highest,
 		}
-		p := r.palette
-		r.current = screens.NewStudyModel(
-			cfg,
-			p.Bg, p.Fg, p.Accent, p.Muted, p.Correct, p.Wrong, p.Border,
-		)
+		r.current = r.newStudy(cfg)
 		return r, r.current.Init()
 
 	case screens.SessionEndMsg:
 		logger.Info("Transitioning to Results Screen, score=%d", msg.Summary.Score)
-		p := r.palette
-		r.current = screens.NewResultsModel(
-			msg.Summary,
-			p.Bg, p.Fg, p.Accent, p.Muted, p.Correct, p.Wrong,
-		)
+		r.current = r.newResults(msg.Summary)
 		return r, r.current.Init()
 
 	case screens.BackToMenuMsg:
 		logger.Info("Transitioning back to Menu")
-		p := r.palette
-		r.current = screens.NewMenuModel(
-			p.Bg, p.Fg, p.Accent, p.Muted, p.SelBg,
-		)
+		r.current = r.newMenu()
 		return r, r.current.Init()
 
 	case screens.PlayAgainMsg:
@@ -108,14 +96,32 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Lives:      r.lives,
 			StartLevel: highest,
 		}
-		p := r.palette
-		r.current = screens.NewStudyModel(
-			cfg,
-			p.Bg, p.Fg, p.Accent, p.Muted, p.Correct, p.Wrong, p.Border,
-		)
+		r.current = r.newStudy(cfg)
+		return r, r.current.Init()
+	case screens.OpenSettingsMsg:
+		logger.Info("Transitionning to Settings Screen")
+		r.current = r.newSettings()
+		return r, r.current.Init()
+
+	case screens.ApplyThemeMsg:
+		r.applyThemeByName(msg.ThemeName)
+		r.cfg.Theme = msg.ThemeName
+		r.themeIdx = indexOfTheme(r.themeList, msg.ThemeName)
+		// Rebuild only the settings screen so it re-renders in the new colours.
+		r.current = r.newSettings()
+		return r, r.current.Init()
+
+	case screens.SaveSettingsMsg:
+		logger.Info("Settings saved, theme=%s", msg.Config.Theme)
+		r.cfg = msg.Config
+		r.lives = msg.Config.Lives
+		r.applyThemeByName(msg.Config.Theme)
+		r.themeIdx = indexOfTheme(r.themeList, msg.Config.Theme)
+		r.current = r.newMenu()
 		return r, r.current.Init()
 	}
 
+	// delegate to active screen
 	var cmd tea.Cmd
 	r.current, cmd = r.current.Update(msg)
 	return r, cmd
@@ -123,4 +129,65 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (r Renderer) View() string {
 	return r.current.View()
+}
+
+// constructors
+func (r *Renderer) newMenu() tea.Model {
+	p := r.palette
+	return screens.NewMenuModel(p.Bg, p.Fg, p.Accent, p.Muted, p.SelBg)
+}
+
+func (r *Renderer) newStudy(cfg game.Config) tea.Model {
+	p := r.palette
+	return screens.NewStudyModel(cfg, p.Bg, p.Fg, p.Accent, p.Muted, p.Correct, p.Wrong, p.Border)
+}
+
+func (r *Renderer) newResults(sum game.Summary) tea.Model {
+	p := r.palette
+	return screens.NewResultsModel(sum, p.Bg, p.Fg, p.Accent, p.Muted, p.Correct, p.Wrong)
+}
+
+func (r *Renderer) newSettings() tea.Model {
+	p := r.palette
+	return screens.NewSettingsModel(r.cfg, p.Bg, p.Fg, p.Accent, p.Muted, p.SelBg)
+}
+
+func (r *Renderer) rebuildCurrent() tea.Model {
+	switch r.current.(type) {
+	case screens.SettingsModel:
+		return r.newSettings()
+	case screens.MenuModel:
+		return r.newMenu()
+	default:
+		// Study / Results: rebuild menu to avoid losing session state.
+		return r.newMenu()
+	}
+}
+
+func (r *Renderer) applyThemeByName(name string) {
+	p, err := theme.Load(name)
+	if err != nil {
+		logger.Error("Failed to load theme %q: %v", name, err)
+		return
+	}
+	r.palette = p
+}
+
+func sortedThemeList() []string {
+	all := theme.Available()
+	for i := 1; i < len(all); i++ {
+		for j := i; j > 0 && all[j] < all[j-1]; j-- {
+			all[j], all[j-1] = all[j-1], all[j]
+		}
+	}
+	return all
+}
+
+func indexOfTheme(list []string, name string) int {
+	for i, s := range list {
+		if s == name {
+			return i
+		}
+	}
+	return 0
 }
