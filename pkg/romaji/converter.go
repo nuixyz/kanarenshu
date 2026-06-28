@@ -120,16 +120,16 @@ var Hiragana = []Character{
 	{Kana: "ぎゅ", Primary: "gyu"},
 	{Kana: "ぎょ", Primary: "gyo"},
 
-	{Kana: "しゃ", Primary: "sha"},
-	{Kana: "しゅ", Primary: "shu"},
-	{Kana: "しょ", Primary: "sho"},
-	{Kana: "じゃ", Primary: "ja"},
-	{Kana: "じゅ", Primary: "ju"},
-	{Kana: "じょ", Primary: "jo"},
+	{Kana: "しゃ", Primary: "sha", Alts: []string{"sya"}},
+	{Kana: "しゅ", Primary: "shu", Alts: []string{"syu"}},
+	{Kana: "しょ", Primary: "sho", Alts: []string{"syo"}},
+	{Kana: "じゃ", Primary: "ja", Alts: []string{"zya", "jya"}},
+	{Kana: "じゅ", Primary: "ju", Alts: []string{"zyu", "jyu"}},
+	{Kana: "じょ", Primary: "jo", Alts: []string{"zyo", "jyo"}},
 
-	{Kana: "ちゃ", Primary: "cha"},
-	{Kana: "ちゅ", Primary: "chu"},
-	{Kana: "ちょ", Primary: "cho"},
+	{Kana: "ちゃ", Primary: "cha", Alts: []string{"tya"}},
+	{Kana: "ちゅ", Primary: "chu", Alts: []string{"tyu"}},
+	{Kana: "ちょ", Primary: "cho", Alts: []string{"tyo"}},
 
 	{Kana: "にゃ", Primary: "nya"},
 	{Kana: "にゅ", Primary: "nyu"},
@@ -145,7 +145,7 @@ var Hiragana = []Character{
 	{Kana: "ぴゅ", Primary: "pyu"},
 	{Kana: "ぴょ", Primary: "pyo"},
 
-	{Kana: "みょ", Primary: "mya"},
+	{Kana: "みゃ", Primary: "mya"},
 	{Kana: "みゅ", Primary: "myu"},
 	{Kana: "みょ", Primary: "myo"},
 
