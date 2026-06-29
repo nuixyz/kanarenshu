@@ -21,6 +21,21 @@ kanarenshu is a terminal-based app for learning hiragana and katakana.
 
 ## Installation
 
+### Nix
+Nix users can directly use this repository to get the latest kanarenshu for their system.
+
+Add in your `flake.nix`:
+```nix
+inputs.kanarenshu.url = "github:nuixyz/kanarenshu";
+```
+
+Pass inputs to your modules and then in `configuration.nix`:
+```nix
+environment.systemPackages = [
+  inputs.kanarenshu.packages.${pkgs.stdenv.hostPlatform.system}.default
+];
+```
+
 ### From Source
 ```base
 git clone https://github.com/nuixyz/kanarenshu
