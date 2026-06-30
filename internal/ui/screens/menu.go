@@ -13,6 +13,8 @@ type StartStudyMsg struct {
 
 type OpenSettingsMsg struct{}
 
+// type OpenJLPTSelectMsg struct{}
+
 type QuitMsg struct{}
 
 type menuItem struct {
@@ -50,8 +52,13 @@ func NewMenuModel(
 		},
 		{
 			label:    "Mixed",
-			sublabel: "Both scripts interleaved",
+			sublabel: "Hiragana and Katakana combined!",
 			msg:      StartStudyMsg{Mode: 2},
+		},
+		{
+			label:    "Kanji",
+			sublabel: "JLPT graded kanji",
+			msg:      OpenJLPTSelectMsg{},
 		},
 		{
 			label:    "Settings",
@@ -112,7 +119,7 @@ func (m MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m MenuModel) View() string {
 	title := m.titleStyle.Render("かな練習") + "\n" + m.titleStyle.Render("kanarenshu")
-	subtitle := m.sublabelStyle.Render("Japanese kana practise for the terminal")
+	subtitle := m.subtitleStyle.Render(": Japanese kana practise for the terminal")
 
 	menu := ""
 	for i, item := range m.items {
@@ -131,7 +138,7 @@ func (m MenuModel) View() string {
 		}
 	}
 
-	footer := m.footerStyle.Render(" ↑↓ / jk to move		enter to select		s settings		ctrl+t cycle theme		q to quit")
+	footer := m.footerStyle.Render("↑↓ / jk to move		enter to select		ctrl+t cycle theme		q to quit")
 
 	body := fmt.Sprintf("%s\n%s\n%s\n%s", title, subtitle, menu, footer)
 

@@ -42,7 +42,7 @@ func (r Renderer) Init() tea.Cmd {
 }
 
 func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	//global shortcut
+	// global shortcut
 	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "ctrl+t" {
 		r.themeIdx = (r.themeIdx + 1) % len(r.themeList)
 		name := r.themeList[r.themeIdx]
@@ -60,21 +60,47 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case screens.StartStudyMsg:
 		logger.Info("Transitioning to Study Screen, mode=%d", msg.Mode)
 		mode := data.Mode(msg.Mode)
+
 		highest, err := storage.HighestLevelFor(mode)
 		if err != nil {
 			logger.Error("Failed to load progress: %v", err)
 			highest = 0
 		}
+
 		cfg := game.Config{
 			Mode:       mode,
 			Lives:      r.lives,
 			StartLevel: highest,
 		}
+
 		r.current = r.newStudy(cfg)
+		return r, r.current.Init()
+
+	case screens.StartKanjiStudyMsg:
+		logger.Info("Transitioning to Kanji Study Screen, JLPT=%s", msg.JLPT)
+
+		highest, err := storage.HighestKanjiLevelFor(msg.JLPT)
+		if err != nil {
+			logger.Error("Failed to load Kanji progress: %v", err)
+			highest = 0
+		}
+
+		cfg := game.KanjiConfig{
+			JLPT:       msg.JLPT,
+			Lives:      r.lives,
+			StartLevel: highest,
+		}
+
+		r.current = r.newKanjiStudy(cfg)
 		return r, r.current.Init()
 
 	case screens.SessionEndMsg:
 		logger.Info("Transitioning to Results Screen, score=%d", msg.Summary.Score)
+		r.current = r.newResults(msg.Summary)
+		return r, r.current.Init()
+
+	case screens.KanjiSessionEndMsg:
+		logger.Info("Transitioning to Kanji Results Screen, score=%d", msg.Summary.Score)
 		r.current = r.newResults(msg.Summary)
 		return r, r.current.Init()
 
@@ -98,16 +124,21 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		r.current = r.newStudy(cfg)
 		return r, r.current.Init()
+
 	case screens.OpenSettingsMsg:
 		logger.Info("Transitionning to Settings Screen")
 		r.current = r.newSettings()
+		return r, r.current.Init()
+
+	case screens.OpenJLPTSelectMsg:
+		logger.Info("Transitioning to JLPT Select Screen")
+		r.current = r.newKanjiMenu()
 		return r, r.current.Init()
 
 	case screens.ApplyThemeMsg:
 		r.applyThemeByName(msg.ThemeName)
 		r.cfg.Theme = msg.ThemeName
 		r.themeIdx = indexOfTheme(r.themeList, msg.ThemeName)
-		// Rebuild only the settings screen so it re-renders in the new colours.
 		r.current = r.newSettings()
 		return r, r.current.Init()
 
@@ -142,9 +173,19 @@ func (r *Renderer) newStudy(cfg game.Config) tea.Model {
 	return screens.NewStudyModel(cfg, p.Bg, p.Fg, p.Accent, p.Muted, p.Correct, p.Wrong, p.Border)
 }
 
+func (r *Renderer) newKanjiStudy(cfg game.KanjiConfig) tea.Model {
+	p := r.palette
+	return screens.NewKanjiStudyModel(cfg, p.Bg, p.Fg, p.Accent, p.Muted, p.Correct, p.Wrong, p.Border)
+}
+
 func (r *Renderer) newResults(sum game.Summary) tea.Model {
 	p := r.palette
 	return screens.NewResultsModel(sum, p.Bg, p.Fg, p.Accent, p.Muted, p.Correct, p.Wrong)
+}
+
+func (r *Renderer) newKanjiMenu() tea.Model {
+	p := r.palette
+	return screens.NewJLPTSelectModel(p.Bg, p.Fg, p.Accent, p.Muted, p.SelBg)
 }
 
 func (r *Renderer) newSettings() tea.Model {
@@ -158,8 +199,11 @@ func (r *Renderer) rebuildCurrent() tea.Model {
 		return r.newSettings()
 	case screens.MenuModel:
 		return r.newMenu()
+	case screens.JLPTSelectModel:
+		return r.newKanjiMenu()
+	case screens.KanjiStudyModel:
+		return r.newMenu()
 	default:
-		// Study / Results: rebuild menu to avoid losing session state.
 		return r.newMenu()
 	}
 }

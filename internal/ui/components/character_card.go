@@ -54,3 +54,48 @@ func (cs CardStyle) Render(kana string, state CardState, hint string, palette th
 
 	return box.Render(char)
 }
+
+func (cs CardStyle) RenderKanji(char string, state CardState, onyomi, kunyomi []string, meaning string, palette theme.Palette) string {
+	box := cs.box
+
+	switch state {
+	case CardCorrect:
+		box = box.BorderForeground(lipgloss.Color(palette.Correct))
+	case CardWrong:
+		box = box.BorderForeground(lipgloss.Color(palette.Wrong))
+	}
+
+	body := cs.character.Render(char)
+
+	if len(onyomi) > 0 || len(kunyomi) > 0 || meaning != "" {
+		hint := ""
+		if len(onyomi) > 0 {
+			hint += "音: " + joinComma(onyomi)
+		}
+		if len(kunyomi) > 0 {
+			if hint != "" {
+				hint += "\n"
+			}
+			hint += "訓: " + joinComma(kunyomi)
+		}
+		if meaning != "" {
+			if hint != "" {
+				hint += "\n"
+			}
+			hint += meaning
+		}
+		body += "\n\n" + cs.hint.Render(hint)
+	}
+	return box.Render(body)
+}
+
+func joinComma(items []string) string {
+	out := ""
+	for i, s := range items {
+		if i > 0 {
+			out += ", "
+		}
+		out += s
+	}
+	return out
+}

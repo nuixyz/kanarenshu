@@ -10,26 +10,22 @@ import (
 	"github.com/nuixyz/kanarenshu/internal/logger"
 )
 
-type Progress struct {
-	HighestLevel map[string]int        `json:"highest_level"`
-	Characters   map[string]*CharStats `json:"kana"`
-}
-
-type ModeStats struct {
+type CharStat struct {
 	Attempts int `json:"attempts"`
 	Correct  int `json:"correct"`
 }
 
-type CharStats struct {
-	TotalAttempts int                   `json:"total_attempts"`
-	TotalCorrect  int                   `json:"total_correct"`
-	Modes         map[string]*ModeStats `json:"modes"`
+type Progress struct {
+	HighestLevel      map[string]int                 `json:"highest_level"`
+	CharStats         map[string]map[string]CharStat `json:"char_stats"`
+	HighestKanjiLevel map[string]int                 `json:"highest_kanji_level"`
 }
 
 func newProgress() *Progress {
 	return &Progress{
-		HighestLevel: make(map[string]int),
-		Characters:   make(map[string]*CharStats),
+		HighestLevel:      make(map[string]int),
+		CharStats:         make(map[string]map[string]CharStat),
+		HighestKanjiLevel: make(map[string]int),
 	}
 }
 
@@ -71,12 +67,11 @@ func Load() (*Progress, error) {
 		return nil, fmt.Errorf("Could not decode progress file: %w", err)
 	}
 
-	if p.HighestLevel == nil {
-		p.HighestLevel = make(map[string]int)
+	if p.CharStats == nil {
+		p.CharStats = make(map[string]map[string]CharStat)
 	}
-
-	if p.Characters == nil {
-		p.Characters = make(map[string]*CharStats)
+	if p.HighestKanjiLevel == nil {
+		p.HighestKanjiLevel = make(map[string]int)
 	}
 
 	logger.Info("Progress loaded from path: %s", path)
@@ -147,30 +142,67 @@ func RecordAttempt(mode data.Mode, kana string, correct bool) error {
 		return err
 	}
 
-	cs, ok := p.Characters[kana]
-	if !ok {
-		cs = &CharStats{
-			Modes: make(map[string]*ModeStats),
-		}
-		p.Characters[kana] = cs
-	}
-	if cs.Modes == nil {
-		cs.Modes = make(map[string]*ModeStats)
+	key := mode.String()
+	if p.CharStats[key] == nil {
+		p.CharStats[key] = make(map[string]CharStat)
 	}
 
-	modeKey := mode.String()
-	ms, ok := cs.Modes[modeKey]
-	if !ok {
-		ms = &ModeStats{}
-		cs.Modes[modeKey] = ms
-	}
-
-	cs.TotalAttempts++
-	ms.Attempts++
+	stat := p.CharStats[key][kana]
+	stat.Attempts++
 	if correct {
-		cs.TotalCorrect++
-		ms.Correct++
+		stat.Correct++
 	}
+	p.CharStats[key][kana] = stat
+
+	return Save(p)
+}
+
+func CharStatsFor(mode data.Mode) (map[string]CharStat, error) {
+	p, err := Load()
+	if err != nil {
+		return nil, err
+	}
+	return p.CharStats[mode.String()], nil
+}
+
+func RecordKanjiLevel(jlpt string, level int) error {
+	p, err := Load()
+	if err != nil {
+		return err
+	}
+	if level > p.HighestKanjiLevel[jlpt] {
+		p.HighestKanjiLevel[jlpt] = level
+		logger.Info("New highest kanji level for %s: %d", jlpt, level)
+		return Save(p)
+	}
+	return nil
+}
+
+func HighestKanjiLevelFor(jlpt string) (int, error) {
+	p, err := Load()
+	if err != nil {
+		return 0, err
+	}
+	return p.HighestKanjiLevel[jlpt], nil
+}
+
+func RecordKanjiAttempts(jlpt string, char string, correct bool) error {
+	p, err := Load()
+	if err != nil {
+		return err
+	}
+
+	key := "kanji_" + jlpt
+	if p.CharStats[key] == nil {
+		p.CharStats[key] = make(map[string]CharStat)
+	}
+
+	stat := p.CharStats[key][char]
+	stat.Attempts++
+	if correct {
+		stat.Correct++
+	}
+	p.CharStats[key][char] = stat
 
 	return Save(p)
 }
