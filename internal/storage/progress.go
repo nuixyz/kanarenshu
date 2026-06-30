@@ -112,6 +112,18 @@ func Save(p *Progress) error {
 	return nil
 }
 
+func ResetProgress() error {
+	path, err := progressFilePath()
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("Could not remove progress file: %w", err)
+	}
+	logger.Info("Progress reset: %s removed.", path)
+	return nil
+}
+
 func RecordLevel(mode data.Mode, level int) error {
 	p, err := Load()
 	if err != nil {

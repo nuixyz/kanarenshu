@@ -26,6 +26,7 @@ const (
 	kindTheme settingKind = iota
 	kindLives
 	kindHints
+	kindReset
 )
 
 type settingRow struct {
@@ -53,6 +54,8 @@ func (r settingRow) displayValue() string {
 			return "∞"
 		}
 		return fmt.Sprintf("%d", r.intVal)
+	case kindReset:
+		return "press enter"
 	}
 	return ""
 }
@@ -64,6 +67,9 @@ type SettingsModel struct {
 
 	original storage.Config
 
+	confirmingReset bool
+	resetMessage    string
+
 	titleStyle       lipgloss.Style
 	selectedStyle    lipgloss.Style
 	normalStyle      lipgloss.Style
@@ -74,6 +80,7 @@ type SettingsModel struct {
 	footerStyle      lipgloss.Style
 	containerStyle   lipgloss.Style
 	dividerStyle     lipgloss.Style
+	dangerStyle      lipgloss.Style
 }
 
 func NewSettingsModel(
@@ -102,6 +109,10 @@ func NewSettingsModel(
 			kind:    kindHints,
 			boolVal: cfg.ShowHints,
 		},
+		{
+			label: "Reset progress",
+			kind:  kindReset,
+		},
 	}
 
 	return SettingsModel{
@@ -119,6 +130,7 @@ func NewSettingsModel(
 		footerStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color(mutedColor)).MarginTop(2),
 		containerStyle:   lipgloss.NewStyle().Padding(2, 4),
 		dividerStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color(mutedColor)),
+		dangerStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Bold(true),
 	}
 }
 
@@ -142,17 +154,36 @@ func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor > 0 {
 				m.cursor--
 			}
+			m.confirmingReset = false
 
 		case "down", "j":
 			if m.cursor < len(m.rows)-1 {
 				m.cursor++
 			}
+			m.confirmingReset = false
 
 		case "left", "h":
+			if m.rows[m.cursor].kind == kindReset {
+				m.confirmingReset = false
+				break
+			}
 			m.stepRow(-1)
 			return m, m.themeChangedCmd()
 
 		case "right", "l", " ", "enter":
+			if m.rows[m.cursor].kind == kindReset {
+				if m.confirmingReset {
+					if err := storage.ResetProgress(); err != nil {
+						m.resetMessage = "Failed to reset progress"
+					} else {
+						m.resetMessage = "Your progress has been reset."
+					}
+					m.confirmingReset = false
+				} else {
+					m.confirmingReset = true
+				}
+				break
+			}
 			m.stepRow(+1)
 			return m, m.themeChangedCmd()
 
@@ -190,7 +221,7 @@ func (m *SettingsModel) themeChangedCmd() tea.Cmd {
 
 func (m SettingsModel) View() string {
 	title := m.titleStyle.Render("Settings")
-	divider := m.dividerStyle.Render("────────────────────────")
+	divider := m.dividerStyle.Render("──────────────────────────────")
 
 	var sb strings.Builder
 	for i, row := range m.rows {
@@ -199,7 +230,11 @@ func (m SettingsModel) View() string {
 		var label, value string
 		if selected {
 			label = m.selectedStyle.Render(row.label)
-			value = m.selectedValStyle.Render(m.arrowWrap(row))
+			if row.kind == kindReset && m.confirmingReset {
+				value = m.dangerStyle.Render("press enter again to confirm")
+			} else {
+				value = m.selectedValStyle.Render(m.arrowWrap(row))
+			}
 		} else {
 			label = m.normalStyle.Render(row.label)
 			value = m.valueStyle.Render(row.displayValue())
@@ -216,7 +251,12 @@ func (m SettingsModel) View() string {
 		"↑↓ / jk  navigate		←→ / hl  change		s  save		esc  cancel",
 	)
 
-	body := fmt.Sprintf("%s\n%s\n\n%s%s", title, divider, sb.String(), footer)
+	msg := ""
+	if m.resetMessage != "" {
+		msg = m.dangerStyle.Render(m.resetMessage) + "\n"
+	}
+
+	body := fmt.Sprintf("%s\n%s\n\n%s%s%s", title, divider, sb.String(), msg, footer)
 	return m.containerStyle.Render(body)
 }
 
@@ -237,6 +277,8 @@ func (m *SettingsModel) arrowWrap(row settingRow) string {
 		return fmt.Sprintf("%s %s %s", left, v, right)
 	case kindLives:
 		return fmt.Sprintf("← %s →", v)
+	case kindReset:
+		return v
 	default:
 		return fmt.Sprintf("← %s →", v)
 	}
