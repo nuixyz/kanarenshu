@@ -12,7 +12,14 @@ import (
 	"github.com/nuixyz/kanarenshu/internal/ui"
 )
 
+var version = "dev"
+
 func main() {
+	if len(os.Args) > 1 && (os.Args[1] == "-v" || os.Args[1] == "--version") {
+		fmt.Printf("kanarenshu version %s\n", version)
+		os.Exit(0)
+	}
+
 	cleanup, err := logger.Init()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: could not initialise logger: %v\n", err)
@@ -31,7 +38,7 @@ func main() {
 		logger.Error("Could not load config: %v — using defaults", err)
 		cfg = storage.DefaultConfig()
 	}
-	logger.Info("Config loaded: theme=%s mode=%s lives=%d", cfg.Theme, cfg.Lives)
+	logger.Info("kanarenshu %s started. Config loaded: theme=%s lives=%d", version, cfg.Theme, cfg.Lives)
 
 	// Resolve palette from config theme.
 	palette, err := theme.Load(cfg.Theme)
@@ -47,8 +54,6 @@ func main() {
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
 	)
-
-	logger.Info("Starting kanarenshu…")
 
 	if _, err := p.Run(); err != nil {
 		logger.Error("Program exited with an error: %v", err)
