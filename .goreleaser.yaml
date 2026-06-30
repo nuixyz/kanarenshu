@@ -5,7 +5,7 @@ before:
     - go mod tidy
 
 builds:
-  - main: .
+  - main: ./cmd/kanarenshu
     env:
       - CGO_ENABLED=0
     ldflags:
