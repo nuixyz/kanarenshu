@@ -74,13 +74,13 @@ func NewKanjiStudyModel(cfg game.KanjiConfig, bgColor, fgColor, accentColor, mut
 		levelUpStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color(bgColor)).Background(lipgloss.Color(accentColor)).Bold(true).Padding(0, 2).MarginBottom(1),
 		newCharStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color(accentColor)),
 		footerStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color(mutedColor)).MarginTop(1),
-		containerStyle: lipgloss.NewStyle().Padding(1, 4),
+		containerStyle: lipgloss.NewStyle().Padding(1, 0),
 		modeStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color(mutedColor)),
 	}
 }
 
 func (m KanjiStudyModel) Init() tea.Cmd {
-	return textinput.Blink
+	return tea.Batch(textinput.Blink, tea.WindowSize())
 }
 
 func (m KanjiStudyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -162,6 +162,7 @@ func (m KanjiStudyModel) View() string {
 	modeLabel := m.modeStyle.Render("Kanji " + s.Cfg().JLPT)
 
 	topBar := lipgloss.JoinHorizontal(lipgloss.Top, progressBar, strings.Repeat(" ", 4), modeLabel)
+	centerTopBar := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, topBar)
 
 	statsLine := m.stats.Render(
 		s.Lives,
@@ -169,6 +170,7 @@ func (m KanjiStudyModel) View() string {
 		s.Streak,
 		s.Score,
 	)
+	centerStats := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, statsLine)
 
 	var cardView string
 	if m.showHint {
@@ -180,12 +182,13 @@ func (m KanjiStudyModel) View() string {
 	} else {
 		cardView = m.card.RenderKanji(cur.Char, m.cardState, nil, nil, "", m.palette)
 	}
+	centerCardView := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, cardView)
 
 	inputLabel := lipgloss.NewStyle().Foreground(lipgloss.Color(m.palette.Muted)).Render("Reading: ")
-
 	inputBox := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color(m.palette.Accent)).Padding(0, 1).Width(26).Render(m.input.View())
 
 	inputArea := inputLabel + "\n" + inputBox
+	centerInputArea := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, inputArea)
 
 	levelUpBanner := ""
 	if m.showLevelUp {
@@ -198,19 +201,25 @@ func (m KanjiStudyModel) View() string {
 				"New: "+strings.Join(m.newChars, " "),
 			)
 		}
-		levelUpBanner = banner + newCharLine + "\n"
+		levelUpBlock := lipgloss.JoinVertical(lipgloss.Center, banner, newCharLine)
+		levelUpBanner = lipgloss.PlaceHorizontal(m.width, lipgloss.Center, levelUpBlock) + "\n"
 	}
 
 	footer := m.footerStyle.Render("enter to submit		esc to menu		ctrl+c to quit")
+	centerFooter := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, footer)
 
-	body := fmt.Sprintf(
-		"%s\n\n%s\n\n%s\n\n%s\n\n%s%s",
-		topBar,
-		statsLine,
-		cardView,
-		inputArea,
+	body := lipgloss.JoinVertical(
+		lipgloss.Center,
+		centerTopBar,
+		"",
+		centerStats,
+		"",
+		centerCardView,
+		"",
+		centerInputArea,
+		"",
 		levelUpBanner,
-		footer,
+		centerFooter,
 	)
 	return m.containerStyle.Render(body)
 }

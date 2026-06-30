@@ -87,14 +87,14 @@ func NewStudyModel(
 		newCharStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color(accentColor)),
 		hintStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color(wrongColor)).Italic(true),
 		footerStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color(mutedColor)).MarginTop(1),
-		containerStyle: lipgloss.NewStyle().Padding(1, 4),
+		containerStyle: lipgloss.NewStyle().Padding(1, 0),
 		modeStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color(mutedColor)),
 	}
 
 }
 
 func (m StudyModel) Init() tea.Cmd {
-	return textinput.Blink
+	return tea.Batch(textinput.Blink, tea.WindowSize())
 }
 
 func (m StudyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -178,13 +178,15 @@ func (m StudyModel) View() string {
 	modeLabel := m.modeStyle.Render(s.Cfg().Mode.String())
 
 	topBar := lipgloss.JoinHorizontal(lipgloss.Top, progressBar, strings.Repeat(" ", 4), modeLabel)
+	centerTopBar := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, topBar)
 
-	statsLien := m.stats.Render(
+	statsLine := m.stats.Render(
 		s.Lives,
 		m.session.Cfg().Lives,
 		s.Streak,
 		s.Score,
 	)
+	centerStats := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, statsLine)
 
 	hint := ""
 	if m.showHint {
@@ -192,12 +194,13 @@ func (m StudyModel) View() string {
 	}
 
 	cardView := m.card.Render(s.Current().Kana, m.cardState, hint, m.palette)
+	centerCard := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, cardView)
 
 	inputLabel := lipgloss.NewStyle().Foreground(lipgloss.Color(m.palette.Muted)).Render("Type Reading: ")
-
 	inputBox := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color(m.palette.Accent)).Padding(0, 1).Width(22).Render(m.input.View())
 
 	inputArea := inputLabel + "\n" + inputBox
+	centerInputArea := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, inputArea)
 
 	levelUpBanner := ""
 	if m.showLevelUp {
@@ -210,19 +213,25 @@ func (m StudyModel) View() string {
 				"New: "+strings.Join(m.newChars, " "),
 			)
 		}
-		levelUpBanner = banner + newCharLine + "\n"
+		levelUpBlock := lipgloss.JoinVertical(lipgloss.Center, banner, newCharLine)
+		levelUpBanner = lipgloss.PlaceHorizontal(m.width, lipgloss.Center, levelUpBlock) + "\n"
 	}
 
 	footer := m.footerStyle.Render("enter to submit		esc to menu		ctrl+c to quit")
+	centerFooter := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, footer)
 
-	body := fmt.Sprintf(
-		"%s\n\n%s\n\n%s\n\n%s\n\n%s%s",
-		topBar,
-		statsLien,
-		cardView,
-		inputArea,
+	body := lipgloss.JoinVertical(
+		lipgloss.Center,
+		centerTopBar,
+		"",
+		centerStats,
+		"",
+		centerCard,
+		"",
+		centerInputArea,
+		"",
 		levelUpBanner,
-		footer,
+		centerFooter,
 	)
 	return m.containerStyle.Render(body)
 }
