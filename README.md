@@ -1,25 +1,44 @@
-# かな練習 · kanarenshu
+<center> <h1>かな練習 · kanarenshu </h1></center>
 
-> Japanese kana practise for the terminal.
+<center>A minimal TUI application to practise Japanese kana and kanji from your terminal</center>
 
-![screenshot of main menu](/assets/main_menu.png)
-
-![screenshot of hiragana mode](/assets/hiragana_session.png)
-
-![screenshot of settings menu](/assets/settings_menu.png)
-
-kanarenshu is a terminal-based app for learning hiragana and katakana. 
+![gif playing](/assets/main.gif)
 
 ---
 
 ## Features
-- **Hiragana, Katakana, and Mixed** modes to choose from.
-- **Weight based selection** - Characters you answer wrong appear more often, while mastered ones fade out.
-- **Level based progression system** - Unlock new characters as you level up.
-- **5 built-in themes** - Tokyo Night, Catppuccin, Gruvbox, Nord, Dracula.
-- **Configurable** - lives, hints all editable via config file or the settings menu.
+- **Hiragana, Katakana, and Mixed** modes for kana practise.
+- **Kanji mode**: Graded by JLPT level (the app supports only N5 level currently), testing on on'yomi, kun'yomi, and English meaning.
+- **Weight-based character selection** - Characters you answer wrong appear more often, while mastered ones fade out.
+- **Level-based progression system** - Unlock new characters as you level up.
+- **Per-character stats**: Tracked separately for each mode, including each kanji tier.
+- **5 built-in themes**: Tokyo Night, Catppuccin, Gruvbox, Nord, Dracula. Cycle through each theme using `ctrl + t` or get a live preview from the settings menu.
+- **Configurable** - lives, hints, and theme, editable via config file or the in-app settings menu.
+
+<div style="display: flex; gap: 10px;">
+  <img src="/assets/main_menu.png" alt="screenshot of main menu" style="width: 50%;">
+  <img src="/assets/settings_menu.png" alt="screenshot of settings menu" style="width: 50%;">
+</div>
+
+<div style="display: flex; gap: 10px; margin-top: 10px;">
+  <img src="/assets/hiragana_session.png" alt="screenshot of hiragana mode" style="width: 50%;">
+  <img src="/assets/kanji_session.png" alt="screenshot of kanji mode" style="width: 50%;">
+</div>
+
+---
 
 ## Installation
+
+### AUR
+Using Yay:
+```bash
+yay -S kanarenshu
+```
+
+Using Paru:
+```bash
+paru -S kanarenshu
+```
 
 ### Nix
 Nix users can directly use this repository to get the latest kanarenshu for their system.
@@ -36,8 +55,11 @@ environment.systemPackages = [
 ];
 ```
 
+### Homebrew
+Coming soon
+
 ### From Source
-```base
+```bash
 git clone https://github.com/nuixyz/kanarenshu
 cd kanarenshu
 go build ./cmd/kanarenshu
@@ -47,10 +69,12 @@ go build ./cmd/kanarenshu
 
 - Go 1.21 or later (uses `//go:embed`)
 
+---
+
 ## Usage
 
-```bash
-./kanarenshu
+```
+kanarenshu
 ```
 
 Use the arrow keys or `j/k` to navigate the menu, 
@@ -80,13 +104,22 @@ Both strict Hepburn and common alternatives are accepted by default:
 | じ | `ji`, `zi` |
 | ん | `n`, `nn` |
 
+### Kanji mode
+
+Select **Kanji** from the main menu, then choose a JLPT level. For each character, any of its on'yomi readings, kun'yomi readings or the English meanings are accepted as a correct answer. A wrong answer reveals the readings and meanings as a hint. Progress of each JLPT tier is tracked independently.
+
+---
 
 ## Progression
 
-Characters are grouped into levels of 5. The program uses an adaptive learning algorithm to determine the weights of each character in a group.
-Within a level, the character selection is weighted. A correct answer halves a character's weight; a wrong answer doubles it (capped to its initial value). Characters reach mastery when their weights fall below a certain threshold. All characters in a group must fall under the threshold to level up. 
+Kana are grouped into levels of 5, kanji are grouped into levels of 10. The app uses an adaptive learning algorithm to determine how often a character appears in a group:
 
-The highest unlocked level is saved automatically and resumed on next launch.
+- A correct answer halves a character's weight.
+- A wrong answer doubles it (capped at the initial weight of 400).
+- A character is considered mastered once it reaches a threshold weight of 25 or below.
+- A level up condition is triggered once every character in the current group is mastered.
+
+The highest unlocked level for each mode is saved automatically and resumed on next launch.
 
 ---
 
@@ -105,7 +138,7 @@ romaji_strict = false           # true = Hepburn only (e.g. "shi", not "si")
 show_hints    = true            # show reading hint after a wrong answer
 ```
 
-Changes take affect on next launch, or can be applied live via the in-app settings menu
+Changes take effect on next launch, or can be applied live via the in-app settings menu
 
 ---
 
@@ -132,6 +165,21 @@ Themes can be changed in the settings menu (`s` from the main menu) or cycled in
 | `~/.local/share/kanarenshu/debug.log` | Debug log |
  
 XDG environment variables (`$XDG_CONFIG_HOME`, `$XDG_DATA_HOME`) are respected if set.
+ 
+---
+
+## Project layout
+ 
+```
+cmd/kanarenshu/         entry point
+internal/data/          hiragana, katakana, and kanji groupings; per level pools
+internal/game/          session logic, scoring, weight-based progression
+internal/storage/       config and progress persistence
+internal/theme/         embedded TOML theme palettes
+internal/ui/            Bubble Tea screens and reusable components
+pkg/romaji/             kana <-> romaji tables and answer checking
+pkg/kanji/              kanji data and answer validation (readings/meanings)
+```
  
 ---
 
