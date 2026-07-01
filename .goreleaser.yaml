@@ -34,6 +34,10 @@ checksum:
 
 changelog:
   sort: asc
+  groups:
+    - title: "What's Changed"
+      regexp: ".*"
+  format: "{{ .Message }} in {{ .ShortHash }} by @{{ .Author }}"
   filters:
     exclude:
       - "^docs:"

@@ -1,6 +1,8 @@
-<p align="center">
-  <img src="assets/main.gif" alt="gif playing" />
-</p>
+<div align="center">
+  <h1>かな練習 · kanarenshu</h1>
+  <p>A minimal TUI application to practise Japanese kana and kanji from your terminal</p>
+  <img src="assets/main.gif" alt="gif playing">
+</div>
 
 ---
 
