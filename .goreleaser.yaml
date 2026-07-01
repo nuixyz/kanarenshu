@@ -34,16 +34,28 @@ checksum:
 
 changelog:
   sort: asc
-  use: github
+  use: git
   abbrev: 7
   groups:
-    - title: "What's Changed"
+    - title: "✨ Features"
+      regexp: '^feat(\(.+\))?:'
+      order: 0
+    - title: "🐛 Bug Fixes"
+      regexp: '^fix(\(.+\))?:'
+      order: 1
+    - title: "🧹 Chores & Refactors"
+      regexp: '^(chore|refactor|perf)(\(.+\))?:'
+      order: 2
+    - title: "Other"
       regexp: ".*"
-  format: "{{ .Message }} in {{ .SHA }} by {{ with .Author.Username }}@{{ . }}{{ else }}{{ .Author.Name }}{{ end }}"
+      order: 999
+  format: "* {{ .Message }}"
   filters:
     exclude:
       - "^docs:"
       - "^test:"
+      - "^Merge pull request"
+      - "^Merge branch"
 
 release:
   footer: >-
