@@ -64,5 +64,6 @@ func SummariseKanji(s *KanjiSession) Summary {
 		Grade:    gradeFor(acc),
 		MaxLevel: s.Level,
 		Mode:     "Kanji " + s.cfg.JLPT,
+		JLPT:     s.cfg.JLPT,
 	}
 }

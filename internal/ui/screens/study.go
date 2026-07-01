@@ -153,7 +153,7 @@ func (m StudyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cardState = components.CardWrong
 				m.showHint = true
 				m.hintText = m.session.Current().Primary
-				cmds = append(cmds, flashAfter(600*time.Millisecond))
+				cmds = append(cmds, flashAfter(1500*time.Millisecond))
 
 			case game.AnswerGameOver:
 				sum := game.Summarise(m.session)

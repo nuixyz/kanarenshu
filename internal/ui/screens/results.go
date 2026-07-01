@@ -2,6 +2,7 @@ package screens
 
 import (
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -11,6 +12,7 @@ import (
 
 type PlayAgainMsg struct {
 	Mode int
+	JLPT string
 }
 
 type ResultsModel struct {
@@ -81,7 +83,7 @@ func (m ResultsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "r", "R":
 			mode := modeStringToInt(m.summary.Mode)
-			return m, func() tea.Msg { return PlayAgainMsg{Mode: mode} }
+			return m, func() tea.Msg { return PlayAgainMsg{Mode: mode, JLPT: m.summary.JLPT} }
 		case "m", "M":
 			return m, func() tea.Msg { return BackToMenuMsg{} }
 		case "q", "Q", "ctrl+c":
@@ -142,12 +144,14 @@ func gradeToColor(g game.Grade, correct, accent, muted, wrong string) string {
 }
 
 func modeStringToInt(mode string) int {
-	switch mode {
-	case "Katakana":
+	switch {
+	case strings.HasPrefix(mode, "Katakana"):
 		return 1
-	case "Mixed":
+	case strings.HasPrefix(mode, "Mixed"):
 		return 2
+	case strings.HasPrefix(mode, "Kanji"):
+		return 3
 	default:
-		return 0 // For Hiragana
+		return 0
 	}
 }

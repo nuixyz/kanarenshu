@@ -20,7 +20,7 @@ func (m Mode) String() string {
 		return "Katakana"
 	case ModeMixed:
 		return "Mixed"
-		case ModeKanji:
+	case ModeKanji:
 		return "Kanji"
 	default:
 		return "Unknown"

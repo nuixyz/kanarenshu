@@ -130,13 +130,13 @@ func (m KanjiStudyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.session.Cfg().JLPT,
 					m.session.Level,
 				)
-				cmds = append(cmds, flashAfter(300*time.Millisecond))
+				cmds = append(cmds, flashAfter(1000*time.Millisecond))
 				cmds = append(cmds, levelUpAfter(2*time.Second))
 
 			case game.AnswerWrong:
 				m.cardState = components.CardWrong
 				m.showHint = true
-				cmds = append(cmds, flashAfter(600*time.Millisecond))
+				cmds = append(cmds, flashAfter(2000*time.Millisecond))
 
 			case game.AnswerGameOver:
 				sum := game.SummariseKanji(m.session)

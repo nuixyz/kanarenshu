@@ -19,6 +19,7 @@ type Summary struct {
 	Grade    Grade
 	MaxLevel int
 	Mode     string
+	JLPT     string
 }
 
 func Summarise(s *Session) Summary {
@@ -30,6 +31,7 @@ func Summarise(s *Session) Summary {
 		Grade:    gradeFor(acc),
 		MaxLevel: s.Level,
 		Mode:     s.cfg.Mode.String(),
+		JLPT:     "",
 	}
 }
 

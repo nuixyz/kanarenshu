@@ -111,6 +111,22 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case screens.PlayAgainMsg:
 		logger.Info("Play Again, mode=%d", msg.Mode)
+
+		if msg.Mode == 3 { // Kanji
+			highest, err := storage.HighestKanjiLevelFor(msg.JLPT)
+			if err != nil {
+				logger.Error("Failed to load Kanji progress: %v", err)
+				highest = 0
+			}
+			cfg := game.KanjiConfig{
+				JLPT:       msg.JLPT,
+				Lives:      r.lives,
+				StartLevel: highest,
+			}
+			r.current = r.newKanjiStudy(cfg)
+			return r, r.current.Init()
+		}
+
 		mode := data.Mode(msg.Mode)
 		highest, err := storage.HighestLevelFor(mode)
 		if err != nil {
