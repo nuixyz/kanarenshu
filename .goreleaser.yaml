@@ -34,10 +34,12 @@ checksum:
 
 changelog:
   sort: asc
+  use: github
+  abbrev: 7
   groups:
     - title: "What's Changed"
       regexp: ".*"
-  format: "{{ .Message }} in {{ .ShortHash }} by @{{ .Author }}"
+  format: "{{ .Message }} in {{ .SHA }} by {{ with .Author.Username }}@{{ . }}{{ else }}{{ .Author.Name }}{{ end }}"
   filters:
     exclude:
       - "^docs:"
