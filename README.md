@@ -1,8 +1,6 @@
-<center> <h1>かな練習 · kanarenshu </h1></center>
-
-<center>A minimal TUI application to practise Japanese kana and kanji from your terminal</center>
-
-![gif playing](/assets/main.gif)
+<p align="center">
+  <img src="assets/main.gif" alt="gif playing" />
+</p>
 
 ---
 
@@ -15,15 +13,16 @@
 - **5 built-in themes**: Tokyo Night, Catppuccin, Gruvbox, Nord, Dracula. Cycle through each theme using `ctrl + t` or get a live preview from the settings menu.
 - **Configurable** - lives, hints, and theme, editable via config file or the in-app settings menu.
 
-<div style="display: flex; gap: 10px;">
-  <img src="/assets/main_menu.png" alt="screenshot of main menu" style="width: 50%;">
-  <img src="/assets/settings_menu.png" alt="screenshot of settings menu" style="width: 50%;">
-</div>
-
-<div style="display: flex; gap: 10px; margin-top: 10px;">
-  <img src="/assets/hiragana_session.png" alt="screenshot of hiragana mode" style="width: 50%;">
-  <img src="/assets/kanji_session.png" alt="screenshot of kanji mode" style="width: 50%;">
-</div>
+<table>
+  <tr>
+    <td width="50%"><img src="assets/main_menu.png" alt="screenshot of main menu"></td>
+    <td width="50%"><img src="assets/settings_menu.png" alt="screenshot of settings menu"></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="assets/hiragana_session.png" alt="screenshot of hiragana mode"></td>
+    <td width="50%"><img src="assets/kanji_session.png" alt="screenshot of kanji mode"></td>
+  </tr>
+</table>
 
 ---
 
