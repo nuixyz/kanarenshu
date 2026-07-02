@@ -12,11 +12,18 @@ import (
 	"github.com/nuixyz/kanarenshu/internal/ui"
 )
 
-var version = "dev"
+var version string // will be set by ldflags during build
+
+func resolvedVersion() string {
+	if version == "" {
+		return "0.1.1"
+	}
+	return version
+}
 
 func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "-v" || os.Args[1] == "--version") {
-		fmt.Printf("kanarenshu version %s\n", version)
+		fmt.Printf("kanarenshu version %s\n", resolvedVersion())
 		os.Exit(0)
 	}
 
@@ -27,6 +34,7 @@ func main() {
 		defer cleanup()
 	}
 
+	// When the application panics, exit the application and print the log file
 	defer logger.RecoverAndLog(func(reason string) {
 		fmt.Fprintln(os.Stderr, reason)
 		os.Exit(1)
@@ -38,7 +46,7 @@ func main() {
 		logger.Error("Could not load config: %v — using defaults", err)
 		cfg = storage.DefaultConfig()
 	}
-	logger.Info("kanarenshu %s started. Config loaded: theme=%s lives=%d", version, cfg.Theme, cfg.Lives)
+	logger.Info("kanarenshu %s started. Config loaded with theme=%s", version, cfg.Theme)
 
 	// Resolve palette from config theme.
 	palette, err := theme.Load(cfg.Theme)
@@ -49,11 +57,7 @@ func main() {
 
 	root := ui.NewRenderer(palette, cfg)
 
-	p := tea.NewProgram(
-		root,
-		tea.WithAltScreen(),
-		tea.WithMouseCellMotion(),
-	)
+	p := tea.NewProgram(root, tea.WithAltScreen(), tea.WithMouseCellMotion())
 
 	if _, err := p.Run(); err != nil {
 		logger.Error("Program exited with an error: %v", err)
