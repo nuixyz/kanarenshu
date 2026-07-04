@@ -25,16 +25,18 @@ const (
 )
 
 type Config struct {
-	Mode       data.Mode
-	Lives      int
-	StartLevel int
+	Mode         data.Mode
+	Lives        int
+	StartLevel   int
+	RomajiStrict bool
 }
 
 func DefaultConfig() Config {
 	return Config{
-		Mode:       data.ModeHiragana,
-		Lives:      3,
-		StartLevel: 0,
+		Mode:         data.ModeHiragana,
+		Lives:        3,
+		StartLevel:   0,
+		RomajiStrict: false,
 	}
 }
 
@@ -89,8 +91,8 @@ func (s *Session) Current() romaji.Character {
 func (s *Session) Submit(answer string) AnswerResult {
 	s.Total++
 
-	isCorrect := romaji.KanaChecker(s.current, answer)
-	
+	isCorrect := romaji.KanaChecker(s.current, answer, s.cfg.RomajiStrict)
+
 	if err := storage.RecordAttempt(s.cfg.Mode, s.current.Kana, isCorrect); err != nil {
 		logger.Error("Failed to record character stats: %v", err)
 	}

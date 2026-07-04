@@ -12,10 +12,13 @@ func Normalize(input string) string {
 	return strings.ToLower(strings.TrimSpace(input))
 }
 
-func KanaChecker(c Character, answer string) bool {
+func KanaChecker(c Character, answer string, strict bool) bool {
 	answer = Normalize(answer)
 	if answer == c.Primary {
 		return true
+	}
+	if strict {
+		return false
 	}
 	for _, alt := range c.Alts {
 		if answer == alt {

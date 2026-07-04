@@ -25,6 +25,7 @@ type settingKind int
 const (
 	kindTheme settingKind = iota
 	kindLives
+	kindStrict
 	kindHints
 	kindReset
 )
@@ -45,6 +46,11 @@ func (r settingRow) displayValue() string {
 	case kindTheme:
 		return r.options[r.idx]
 	case kindHints:
+		if r.boolVal {
+			return "on"
+		}
+		return "off"
+	case kindStrict:
 		if r.boolVal {
 			return "on"
 		}
@@ -96,6 +102,11 @@ func NewSettingsModel(
 			kind:    kindTheme,
 			idx:     themeIdx,
 			options: themeOptions,
+		},
+		{
+			label:   "Romaji Strict",
+			kind:    kindStrict,
+			boolVal: cfg.RomajiStrict,
 		},
 		{
 			label:  "Lives",
@@ -205,6 +216,8 @@ func (m *SettingsModel) stepRow(delta int) {
 		row.idx = clamp(row.idx+delta, 0, len(row.options)-1)
 	case kindHints:
 		row.boolVal = !row.boolVal
+	case kindStrict:
+		row.boolVal = !row.boolVal
 	case kindLives:
 		row.intVal = clamp(row.intVal+delta, row.intMin, row.intMax)
 	}
@@ -294,6 +307,8 @@ func (m *SettingsModel) toConfig() storage.Config {
 			cfg.Lives = row.intVal
 		case kindHints:
 			cfg.ShowHints = row.boolVal
+		case kindStrict:
+			cfg.RomajiStrict = row.boolVal
 		}
 	}
 	return cfg

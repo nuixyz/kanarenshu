@@ -71,6 +71,7 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Mode:       mode,
 			Lives:      r.lives,
 			StartLevel: highest,
+			RomajiStrict: r.cfg.RomajiStrict,
 		}
 
 		r.current = r.newStudy(cfg)
@@ -137,6 +138,7 @@ func (r Renderer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Mode:       mode,
 			Lives:      r.lives,
 			StartLevel: highest,
+			RomajiStrict: r.cfg.RomajiStrict,
 		}
 		r.current = r.newStudy(cfg)
 		return r, r.current.Init()
