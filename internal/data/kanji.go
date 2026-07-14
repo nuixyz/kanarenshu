@@ -4,11 +4,13 @@ import "github.com/nuixyz/kanarenshu/pkg/kanji"
 
 var KanjiSets = map[string][]kanji.Kanji{
 	"N5": kanji.N5,
+	"N4": kanji.N4,
 }
 
 // This divides each inner slice into groups of 10 characters
 var KanjiGroups = map[string][][]kanji.Kanji{
 	"N5": kanji.N5Groups,
+	"N4": kanji.N4Groups,
 }
 
 // Returns a sorted list of JLPT levels that contain some data
