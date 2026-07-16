@@ -60,6 +60,7 @@ func SummariseKanji(s *KanjiSession) Summary {
 	return Summary{
 		Score:    s.Score,
 		Total:    s.Total,
+		WrongAnswers: s.WrongAnswers,
 		Accuracy: acc,
 		Grade:    gradeFor(acc),
 		MaxLevel: s.Level,

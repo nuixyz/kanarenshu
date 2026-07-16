@@ -33,8 +33,9 @@ type KanjiSession struct {
 	Streak int
 	Total  int
 
-	pool    []kanji.Kanji
-	current kanji.Kanji
+	pool         []kanji.Kanji
+	current      kanji.Kanji
+	WrongAnswers []WrongAnswer
 
 	rng *rand.Rand
 
@@ -110,6 +111,11 @@ func (s *KanjiSession) handleWrong() AnswerResult {
 		w = initialWeight
 	}
 	s.weights[char] = w
+
+	s.WrongAnswers = append(s.WrongAnswers, WrongAnswer{
+		Char:   s.current.Char,
+		Answer: s.current.Hint(),
+	})
 
 	logger.Debug("Wrong: %s", char)
 

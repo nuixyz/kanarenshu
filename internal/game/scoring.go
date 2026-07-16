@@ -13,25 +13,32 @@ const (
 )
 
 type Summary struct {
-	Score    int
-	Total    int
-	Accuracy float64
-	Grade    Grade
-	MaxLevel int
-	Mode     string
-	JLPT     string
+	Score        int
+	Total        int
+	WrongAnswers []WrongAnswer
+	Accuracy     float64
+	Grade        Grade
+	MaxLevel     int
+	Mode         string
+	JLPT         string
+}
+
+type WrongAnswer struct {
+	Char   string
+	Answer string
 }
 
 func Summarise(s *Session) Summary {
 	acc := s.Accuracy()
 	return Summary{
-		Score:    s.Score,
-		Total:    s.Total,
-		Accuracy: acc,
-		Grade:    gradeFor(acc),
-		MaxLevel: s.Level,
-		Mode:     s.cfg.Mode.String(),
-		JLPT:     "",
+		Score:        s.Score,
+		Total:        s.Total,
+		WrongAnswers: s.WrongAnswers,
+		Accuracy:     acc,
+		Grade:        gradeFor(acc),
+		MaxLevel:     s.Level,
+		Mode:         s.cfg.Mode.String(),
+		JLPT:         "",
 	}
 }
 

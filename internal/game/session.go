@@ -49,8 +49,9 @@ type Session struct {
 	Streak int
 	Total  int
 
-	pool    []romaji.Character // Characters in rotation
-	current romaji.Character   // Character currently being asked
+	pool         []romaji.Character // Characters in rotation
+	current      romaji.Character   // Character currently being asked
+	WrongAnswers []WrongAnswer      // To track the wrong answers in a session
 
 	rng *rand.Rand
 
@@ -131,6 +132,11 @@ func (s *Session) handleWrong() AnswerResult {
 		w = initialWeight
 	}
 	s.weights[kana] = w
+
+	s.WrongAnswers = append(s.WrongAnswers, WrongAnswer{
+		Char:   s.current.Kana,
+		Answer: s.current.Primary,
+	})
 
 	logger.Debug("Wrong: %s (%s)", s.current.Kana, s.current.Primary)
 

@@ -26,6 +26,10 @@ type ResultsModel struct {
 	footerStyle    lipgloss.Style
 	containerStyle lipgloss.Style
 	dividerStyle   lipgloss.Style
+
+	reviewHeadStyle   lipgloss.Style
+	reviewCharStyle   lipgloss.Style
+	reviewAnswerStyle lipgloss.Style
 }
 
 func NewResultsModel(
@@ -69,6 +73,19 @@ func NewResultsModel(
 			Padding(2, 4),
 
 		dividerStyle: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(mutedColor)),
+
+		reviewHeadStyle: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(accentColor)).
+			Bold(true).
+			MarginTop(1),
+
+		reviewCharStyle: lipgloss.NewStyle().
+			Foreground(lipgloss.Color(wrongColor)).
+			Bold(true).
+			Width(6),
+
+		reviewAnswerStyle: lipgloss.NewStyle().
 			Foreground(lipgloss.Color(mutedColor)),
 	}
 }
@@ -120,12 +137,34 @@ func (m ResultsModel) View() string {
 		stats,
 	)
 
+	review := m.renderReview()
+
 	footer := m.footerStyle.Render(
 		"r  play again		m  main menu		q  quit",
 	)
 
-	body := fmt.Sprintf("%s\n%s%s\n%s", title, gradeBlock, divider, footer)
+	body := fmt.Sprintf("%s\n%s%s\n%s%s", title, gradeBlock, divider, review, footer)
 	return m.containerStyle.Render(body)
+}
+
+func (m ResultsModel) renderReview() string {
+	wrong := m.summary.WrongAnswers
+	if len(wrong) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+	sb.WriteString(m.reviewHeadStyle.Render(fmt.Sprintf("Review (%d missed)", len(wrong))))
+	sb.WriteString("\n")
+
+	for _, w := range wrong {
+		sb.WriteString(m.reviewCharStyle.Render(w.Char))
+		sb.WriteString(m.reviewAnswerStyle.Render(w.Answer))
+		sb.WriteString("\n")
+	}
+	sb.WriteString("\n")
+
+	return sb.String()
 }
 
 func gradeToColor(g game.Grade, correct, accent, muted, wrong string) string {
