@@ -30,6 +30,8 @@
 
 ## Installation
 
+Pre-compiled binaries are available in the [Releases](https://github.com/nuixyz/kanarenshu/releases) section.
+
 ### AUR
 Using Yay:
 ```bash
