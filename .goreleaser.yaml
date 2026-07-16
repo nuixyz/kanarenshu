@@ -57,7 +57,25 @@ changelog:
       - "^Merge pull request"
       - "^Merge branch"
 
-release:
-  footer: >-
-    ---
-    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+aurs:
+  - name: kanarenshu-bin
+    homepage: "https://github.com/nuixyz/kanarenshu"
+    description: "A minimal TUI application to practise Japanese from the terminal."
+    maintainers:
+      - "nuixyz"
+    license: "MIT"
+    private_key: "{{ .Env.AUR_KEY }}"
+    git_url: "ssh://aur@aur.archlinux.org/kanarenshu-bin.git"
+    provides:
+      - kanarenshu
+    conflicts:
+      - kanarenshu
+    package: |-
+      install -Dm755 "./kanarenshu" "${pkgdir}/usr/bin/kanarenshu"
+      install -Dm644 "./README.md" "${pkgdir}/usr/share/doc/kanarenshu/README.md"
+      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/kanarenshu/LICENSE"
+    commit_author:
+      name: nuixyz
+      email: contactme@nuixyz.dev
+    commit_msg_template: "kananrenshu-bin: updated to {{ .Tag }}"
+    goamd64: v1
