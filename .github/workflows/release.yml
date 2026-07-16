@@ -43,18 +43,18 @@ jobs:
       - name: Clone kanarenshu AUR repo
         run: |
           GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o IdentitiesOnly=yes" \
-          git clone ssh://aur@aur.archlinux.org/kanarenshu.git aur-kanarenshu
+            git clone ssh://aur@aur.archlinux.org/kanarenshu.git aur-kanarenshu
 
       - name: Bump pkgver and sha256sum
         run: |
           cd aur-kanarenshu
-          VERSION="${GITHUB_REF_NAME#v}"\
+          VERSION="${GITHUB_REF_NAME#v}"
           URL="https://github.com/nuixyz/kanarenshu/archive/refs/tags/${GITHUB_REF_NAME}.tar.gz"
 
           SHA=$(curl -sL "$URL" | sha256sum | cut -d' ' -f1)
 
           if [ -z "$SHA" ]; then
-            echo "Failed to computer sha checksums. Aborting."
+            echo "Failed to compute sha256sum. Aborting."
             exit 1
           fi
 
@@ -64,6 +64,14 @@ jobs:
 
           echo "Updated PKGBUILD:"
           cat PKGBUILD
+
+      - name: Regenerate .SRCINFO
+        run: |
+          cd aur-kanarenshu
+          docker run --rm -v "$PWD:/pkg" -w /pkg archlinux:base-devel \
+            bash -c "useradd -m builder && chown -R builder:builder /pkg && su builder -c 'makepkg --printsrcinfo' > .SRCINFO"
+          echo "Generated .SRCINFO:"
+          cat .SRCINFO
 
       - name: Commit and push
         run: |
