@@ -8,7 +8,6 @@ const (
 	ModeHiragana Mode = iota
 	ModeKatakana
 	ModeMixed
-	ModeKanji
 )
 
 // Return a human readable label for the mode.
@@ -20,8 +19,6 @@ func (m Mode) String() string {
 		return "Katakana"
 	case ModeMixed:
 		return "Mixed"
-	case ModeKanji:
-		return "Kanji"
 	default:
 		return "Unknown"
 	}

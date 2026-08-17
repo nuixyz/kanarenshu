@@ -8,12 +8,8 @@ type Character struct {
 	Alts    []string
 }
 
-func Normalize(input string) string {
-	return strings.ToLower(strings.TrimSpace(input))
-}
-
 func KanaChecker(c Character, answer string, strict bool) bool {
-	answer = Normalize(answer)
+	answer = normalize(answer)
 	if answer == c.Primary {
 		return true
 	}
@@ -26,6 +22,10 @@ func KanaChecker(c Character, answer string, strict bool) bool {
 		}
 	}
 	return false
+}
+
+func normalize(input string) string {
+	return strings.ToLower(strings.TrimSpace(input))
 }
 
 var Hiragana = []Character{

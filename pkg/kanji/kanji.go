@@ -9,27 +9,21 @@ type Kanji struct {
 	Meanings []string
 }
 
-func (k Kanji) Display() string {
-	return k.Char
-}
-
-// Hint returns a the primary meaning and the first on'yomi reading
+// returns the primary meaning and the first kun'yomi reading
 func (k Kanji) Hint() string {
 	parts := []string{}
 	if len(k.Meanings) > 0 {
 		parts = append(parts, k.Meanings[0])
 	}
-	if len(k.Onyomi) > 0 {
-		parts = append(parts, k.Onyomi[0])
+	if len(k.Kunyomi) > 0 {
+		parts = append(parts, k.Kunyomi[0])
 	}
 	return strings.Join(parts, " · ")
 }
 
-// Check returns true if the answer matches any accepted reading or meaning
-// Accepts on'yomi romaji, kun'yomi romaji, English meaning
+// Returns true if answer matches any kunyomi, onyomi or english meaning
 func (k Kanji) Check(answer string) bool {
 	answer = normalize(answer)
-
 	if answer == "" {
 		return false
 	}
